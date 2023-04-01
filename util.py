@@ -1,5 +1,6 @@
 import yaml
 import os
+import discord
 
 def pluralize(count, singular, plural):
     return plural if count > 1 else singular
@@ -61,7 +62,7 @@ def user_list(channel):
 
 def load_config(guild_id):
     config_path = f'config/{guild_id}.yml'
-    default_config = {'log_channel_name': 'voice_logs'}
+    default_config = {'log_channel_name': 'voice_logs', 'logging_enabled': True}
 
     if os.path.exists(config_path):
         with open(config_path, 'r') as file:
@@ -81,3 +82,12 @@ def save_config(guild_id, config):
 
     with open(config_path, 'w') as file:
         yaml.safe_dump(config, file)
+
+async def send_embed(log_channel, title, description, color, fields=None, timestamp=None):
+    embed = discord.Embed(title=title, description=description, color=color)
+    if fields:
+        for name, value in fields:
+            embed.add_field(name=name, value=value, inline=False)
+    if timestamp:
+        embed.timestamp = timestamp
+    await log_channel.send(embed=embed)

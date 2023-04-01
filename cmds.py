@@ -81,3 +81,16 @@ async def set_log_channel(ctx, log_channel_name: str = None):
     util.save_config(ctx.guild.id, config)
 
     await ctx.send(f'Successfully set the log channel name to "{log_channel_name}".')
+
+@commands.command(name='toggle_logging')
+async def toggle_logging(ctx):
+    guild_id = ctx.guild.id
+    config = util.load_config(guild_id)
+    logging_enabled = config.get('logging_enabled', True)
+    config['logging_enabled'] = not logging_enabled
+    util.save_config(guild_id, config)
+
+    if logging_enabled:
+        await ctx.send("Logging has been disabled.")
+    else:
+        await ctx.send("Logging has been enabled.")
