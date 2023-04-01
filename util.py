@@ -1,3 +1,6 @@
+import yaml
+import os
+
 def pluralize(count, singular, plural):
     return plural if count > 1 else singular
 
@@ -55,3 +58,26 @@ def user_list(channel):
     if not channel.members:
         return "No users"
     return ", ".join([member.mention for member in channel.members])
+
+def load_config(guild_id):
+    config_path = f'config/{guild_id}.yml'
+    default_config = {'log_channel_name': 'voice_logs'}
+
+    if os.path.exists(config_path):
+        with open(config_path, 'r') as file:
+            return yaml.safe_load(file)
+    else:
+        # Create the config directory if it doesn't exist
+        os.makedirs(os.path.dirname(config_path), exist_ok=True)
+
+        # Create the config file with default values
+        with open(config_path, 'w') as file:
+            yaml.safe_dump(default_config, file)
+
+        return default_config
+    
+def save_config(guild_id, config):
+    config_path = f'config/{guild_id}.yml'
+
+    with open(config_path, 'w') as file:
+        yaml.safe_dump(config, file)
