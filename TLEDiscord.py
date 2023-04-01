@@ -5,7 +5,7 @@ from discord.ext import commands, tasks
 
 intents = discord.Intents().all()
 bot = commands.Bot(command_prefix='!', intents=intents)
-
+ 
 @bot.event
 async def on_ready():
     print("----------------------")
