@@ -17,9 +17,9 @@ tle_prefix = '!'
 intents = discord.Intents().all()
 bot = commands.Bot(command_prefix=tle_prefix, intents=intents)
 
-# bot.add_command(cmds.move)
-# bot.add_command(cmds.set_log_channel)
-# bot.add_command(cmds.toggle_logging)
+bot.add_command(cmds.move)
+bot.add_command(cmds.set_log_channel)
+bot.add_command(cmds.toggle_logging)
 
 # Initialize the bot
 @bot.event
@@ -46,22 +46,25 @@ async def on_ready():
     for command in bot.commands:
         print(f"\t!{command.name}")
     
-
     heartbeat.start()
     daily_report.start()
     check_and_move_users.start()
     print("Ready...")
+    heartbeat_proc()
 
 # Loop section
 
 @tasks.loop(minutes=30)
 async def heartbeat():
+    heartbeat_proc()
+
+def heartbeat_proc():
     for guild in bot.guilds:
         total_users = len(guild.members)
         users_in_voice_chat = sum(1 for member in guild.members if member.voice)
 
         current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        print(f"{current_time}\t{guild.name}\tTotal Users: {total_users}\t| Users in Voice Chat: {users_in_voice_chat}")
+        print(f"[{current_time}] [{guild.name}] Total Users: {total_users}\t| Users in Voice Chat: {users_in_voice_chat}")
 
 @tasks.loop(hours=24)
 async def check_and_move_users():
@@ -81,17 +84,38 @@ async def check_and_move_users():
                         moved_users_count += 1
                     except discord.errors.HTTPException as e:
                         print(f'Error moving {member.display_name}: {str(e)}')
+                current_time = datetime.datetime.now(pytz.timezone('America/Chicago'))
 
                 if moved_users_count > 0:
-                    print(f'\tMoved {util.pluralize(moved_users_count, "user", "users")} from {twerk_channel.name} to {member_general_channel.name}')
+                    print(f"[{current_time.strftime('%Y-%m-%d %H:%M:%S')}] [AutoMove] Moved {util.pluralize(moved_users_count, 'user', 'users')} from {twerk_channel.name} to {member_general_channel.name}")
+                else: 
+                    print(f"[{current_time.strftime('%Y-%m-%d %H:%M:%S')}] [AutoMove] No users to move from {twerk_channel.name} to {member_general_channel.name}")
 
 @tasks.loop(hours=24)
 async def daily_report():
     current_time = datetime.datetime.now(pytz.timezone('America/Chicago'))
-    print(f"{current_time.strftime('%Y-%m-%d %H:%M:%S')}\tDaily Report: {len(user_joined)} unique users joined a voice channel since yesterday.")
+    print(f"[{current_time.strftime('%Y-%m-%d %H:%M:%S')}] [Daily Report] {len(user_joined)} unique users joined a voice channel since yesterday.")
     user_joined.clear()
 
 # Before loop section
+
+@heartbeat.before_loop
+async def before_heartbeat():
+    now = datetime.datetime.now(pytz.timezone('America/Chicago'))
+
+    if now.minute < 30:
+        target_minute = 30
+    else:
+        target_minute = 0
+
+    if target_minute == 0:
+        next_run = now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
+    else:
+        next_run = now.replace(minute=30, second=0, microsecond=0)
+
+    #print(f"Next heartbeat: {(next_run - now).total_seconds()}")
+    await asyncio.sleep((next_run - now).total_seconds())
+
 
 @check_and_move_users.before_loop
 async def before_check_and_move_users():

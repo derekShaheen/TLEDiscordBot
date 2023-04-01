@@ -72,6 +72,13 @@ async def move(ctx, destination_name: str = None, source_name: str = None):
     help='Set the name of the log channel for voice activity.'
 )
 async def set_log_channel(ctx, log_channel_name: str = None):
+    # Make sure the user has the required role
+    allowed_roles = ["Administrator", "Senior Mod"]
+
+    if not any(role.name in allowed_roles for role in ctx.author.roles):
+        await ctx.send("You do not have the required role to use this command.")
+        return
+
     if log_channel_name is None:
         await ctx.send("Please provide a log channel name.")
         return
@@ -84,6 +91,13 @@ async def set_log_channel(ctx, log_channel_name: str = None):
 
 @commands.command(name='toggle_logging')
 async def toggle_logging(ctx):
+    # Make sure the user has the required role
+    allowed_roles = ["Administrator", "Senior Mod"]
+
+    if not any(role.name in allowed_roles for role in ctx.author.roles):
+        await ctx.send("You do not have the required role to use this command.")
+        return
+
     guild_id = ctx.guild.id
     config = util.load_config(guild_id)
     logging_enabled = config.get('logging_enabled', True)

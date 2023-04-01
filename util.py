@@ -63,7 +63,7 @@ def user_list(channel):
 def load_config(guild_id):
     config_path = f'config/{guild_id}.yml'
     default_config = {'log_channel_name': 'voice_logs', 'logging_enabled': True}
-
+    
     if os.path.exists(config_path):
         with open(config_path, 'r') as file:
             return yaml.safe_load(file)
