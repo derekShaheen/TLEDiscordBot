@@ -20,6 +20,8 @@ bot = commands.Bot(command_prefix=tle_prefix, intents=intents)
 bot.add_command(cmds.move)
 bot.add_command(cmds.set_log_channel)
 bot.add_command(cmds.toggle_logging)
+bot.add_command(cmds.modify_allowed_roles)
+bot.add_command(cmds.view_allowed_roles)
 
 # Initialize the bot
 @bot.event

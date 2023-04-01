@@ -2,6 +2,17 @@ import discord
 from discord.ext import commands
 import util
 
+def has_required_role(member, allowed_roles):
+    if member.guild is None:
+        return False
+    # Check if the member has the "Administrator" permission
+    if any(role.permissions.administrator for role in member.roles):
+        return True
+
+    # Check if the member has any of the allowed roles
+    return any(role.name in allowed_roles for role in member.roles)
+
+
 @commands.command(
     name='move',
     help='Move all users from the source voice channel to the destination voice channel. If no source channel is specified, your current voice channel will be used. \nParameters: \n   <destination> - The name of the destination voice channel. \n   (source) - (Optional) The name of the source voice channel.'
@@ -27,9 +38,7 @@ async def move(ctx, destination_name: str = None, source_name: str = None):
         return
 
     # Make sure the user has the required role
-    allowed_roles = ["Administrator", "Senior Mod"]
-
-    if not any(role.name in allowed_roles for role in ctx.author.roles):
+    if not await has_required_role(ctx):
         await ctx.send("You do not have the required role to use this command.")
         return
 
@@ -73,9 +82,7 @@ async def move(ctx, destination_name: str = None, source_name: str = None):
 )
 async def set_log_channel(ctx, log_channel_name: str = None):
     # Make sure the user has the required role
-    allowed_roles = ["Administrator", "Senior Mod"]
-
-    if not any(role.name in allowed_roles for role in ctx.author.roles):
+    if not await has_required_role(ctx):
         await ctx.send("You do not have the required role to use this command.")
         return
 
@@ -92,9 +99,7 @@ async def set_log_channel(ctx, log_channel_name: str = None):
 @commands.command(name='toggle_logging')
 async def toggle_logging(ctx):
     # Make sure the user has the required role
-    allowed_roles = ["Administrator", "Senior Mod"]
-
-    if not any(role.name in allowed_roles for role in ctx.author.roles):
+    if not await has_required_role(ctx):
         await ctx.send("You do not have the required role to use this command.")
         return
 
@@ -108,3 +113,50 @@ async def toggle_logging(ctx):
         await ctx.send("Logging has been disabled.")
     else:
         await ctx.send("Logging has been enabled.")
+
+@commands.command(name='modify_allowed_roles')
+async def modify_allowed_roles(ctx, action: str, role_name: str):
+    # Load the allowed_roles list from the config
+    config = util.load_config(ctx.guild.id)
+    allowed_roles = config.get('allowed_roles', [])
+
+    # If the user is not an administrator, check if they have an allowed role
+    if not ctx.author.guild_permissions.administrator:
+        if not has_required_role(ctx.author, allowed_roles):
+            await ctx.send("You do not have the required role to use this command.")
+            return
+
+    action = action.lower()
+    if action == 'add':
+        if role_name not in allowed_roles:
+            allowed_roles.append(role_name)
+            await ctx.send(f'Successfully added "{role_name}" to the allowed roles list.')
+        else:
+            await ctx.send(f'Role "{role_name}" is already in the allowed roles list.')
+    elif action == 'remove':
+        if role_name in allowed_roles:
+            allowed_roles.remove(role_name)
+            await ctx.send(f'Successfully removed "{role_name}" from the allowed roles list.')
+        else:
+            await ctx.send(f'Role "{role_name}" is not in the allowed roles list.')
+    else:
+        await ctx.send('Invalid action. Please use "add" or "remove".')
+
+    # Save the updated allowed_roles list to the config
+    config['allowed_roles'] = allowed_roles
+    util.save_config(ctx.guild.id, config)
+
+
+@commands.command(name='view_allowed_roles')
+async def view_allowed_roles(ctx):
+    allowed_roles = util.load_config(ctx.guild.id).get('allowed_roles', [])
+    
+    # Check if the user has the required role
+    if not has_required_role(ctx.author, allowed_roles):
+        await ctx.send("You do not have the required role to use this command.")
+        return
+
+    if not allowed_roles:
+        await ctx.send("No allowed roles have been set.")
+    else:
+        await ctx.send(f"Allowed roles: {', '.join(allowed_roles)}")
