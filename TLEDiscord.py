@@ -24,14 +24,16 @@ bot.add_command(cmds.modify_allowed_roles)
 bot.add_command(cmds.view_allowed_roles)
 
 # Initialize the bot
+
+
 @bot.event
 async def on_ready():
     config = util.load_config(bot.guilds[0].id)
     print("----------------------")
     print("Logged in as")
-    print("\tUsername: %s"%bot.user.name)
-    print("\tID: %s"%bot.user.id)
-    print("\tLog channel:%s"%config['log_channel_name'])
+    print("\tUsername: %s" % bot.user.name)
+    print("\tID: %s" % bot.user.id)
+    print("\tLog channel:%s" % config['log_channel_name'])
     print("----------------------")
 
     print("Bot is running on the following servers:")
@@ -43,40 +45,56 @@ async def on_ready():
     print("----------------------")
 
     print("Initializing and scheduling tasks...")
-    
+
     print("Bot Commands:")
     for command in bot.commands:
         print(f"\t!{command.name}")
-    
+
     heartbeat.start()
     daily_report.start()
     check_and_move_users.start()
+
+    # Prepare the message content
+    message_content = f'{bot.user} is now online and connected to the following servers:\n'
+    for guild in bot.guilds:
+        message_content += f'{guild.name} (id: {guild.id})\n'
+
+    # Send a private message to the developer with the bot status updates
+    await send_developer_message(bot, message_content)
+
     print("Ready...")
     heartbeat_proc()
 
 # Loop section
 
+
 @tasks.loop(minutes=30)
 async def heartbeat():
     heartbeat_proc()
 
+
 def heartbeat_proc():
     for guild in bot.guilds:
         total_users = len(guild.members)
-        users_in_voice_chat = sum(1 for member in guild.members if member.voice)
+        users_in_voice_chat = sum(
+            1 for member in guild.members if member.voice)
 
         current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         print(f"[{current_time}] [{guild.name}] Total Users: {total_users}\t| Users in Voice Chat: {users_in_voice_chat}")
 
+
 @tasks.loop(hours=24)
 async def check_and_move_users():
-    current_time = datetime.datetime.now(pytz.timezone('America/Chicago'))  # Adjust the timezone if needed
+    current_time = datetime.datetime.now(pytz.timezone(
+        'America/Chicago'))  # Adjust the timezone if needed
     target_time = time(hour=18, minute=00)
 
     if current_time.time() > target_time:
         for guild in bot.guilds:
-            twerk_channel = discord.utils.get(guild.voice_channels, name="Twerk")
-            member_general_channel = discord.utils.get(guild.voice_channels, name="Member General")
+            twerk_channel = discord.utils.get(
+                guild.voice_channels, name="Twerk")
+            member_general_channel = discord.utils.get(
+                guild.voice_channels, name="Member General")
 
             if twerk_channel and member_general_channel:
                 moved_users_count = 0
@@ -86,20 +104,28 @@ async def check_and_move_users():
                         moved_users_count += 1
                     except discord.errors.HTTPException as e:
                         print(f'Error moving {member.display_name}: {str(e)}')
-                current_time = datetime.datetime.now(pytz.timezone('America/Chicago'))
+                current_time = datetime.datetime.now(
+                    pytz.timezone('America/Chicago'))
 
                 if moved_users_count > 0:
                     print(f"[{current_time.strftime('%Y-%m-%d %H:%M:%S')}] [AutoMove] Moved {util.pluralize(moved_users_count, 'user', 'users')} from {twerk_channel.name} to {member_general_channel.name}")
-                else: 
-                    print(f"[{current_time.strftime('%Y-%m-%d %H:%M:%S')}] [AutoMove] No users to move from {twerk_channel.name} to {member_general_channel.name}")
+                else:
+                    print(
+                        f"[{current_time.strftime('%Y-%m-%d %H:%M:%S')}] [AutoMove] No users to move from {twerk_channel.name} to {member_general_channel.name}")
+
 
 @tasks.loop(hours=24)
 async def daily_report():
     current_time = datetime.datetime.now(pytz.timezone('America/Chicago'))
-    print(f"[{current_time.strftime('%Y-%m-%d %H:%M:%S')}] [Daily Report] {len(user_joined)} unique users joined a voice channel since yesterday.")
+    message_content = f"[{current_time.strftime('%Y-%m-%d %H:%M:%S')}] [Daily Report] {len(user_joined)} unique users joined a voice channel since yesterday."
+    print(message_content)
     user_joined.clear()
 
+    # Send the message to the developer
+    await send_developer_message(bot, message_content)
+
 # Before loop section
+
 
 @heartbeat.before_loop
 async def before_heartbeat():
@@ -111,11 +137,12 @@ async def before_heartbeat():
         target_minute = 0
 
     if target_minute == 0:
-        next_run = now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
+        next_run = now.replace(
+            minute=0, second=0, microsecond=0) + timedelta(hours=1)
     else:
         next_run = now.replace(minute=30, second=0, microsecond=0)
 
-    #print(f"Next heartbeat: {(next_run - now).total_seconds()}")
+    # print(f"Next heartbeat: {(next_run - now).total_seconds()}")
     await asyncio.sleep((next_run - now).total_seconds())
 
 
@@ -124,20 +151,24 @@ async def before_check_and_move_users():
     now = datetime.datetime.now(pytz.timezone('America/Chicago'))
     target_time = datetime.time(hour=18, minute=00)
     tomorrow = now.date() + timedelta(days=1)
-    next_run = datetime.datetime.combine(tomorrow, target_time, tzinfo=now.tzinfo)
-    #print(f"Next twerk move run:{(next_run - now).total_seconds()}")
+    next_run = datetime.datetime.combine(
+        tomorrow, target_time, tzinfo=now.tzinfo)
+    # print(f"Next twerk move run:{(next_run - now).total_seconds()}")
     await asyncio.sleep((next_run - now).total_seconds())
+
 
 @daily_report.before_loop
 async def before_daily_report():
     now = datetime.datetime.now(pytz.timezone('America/Chicago'))
     target_time = datetime.time(hour=6, minute=00)
     tomorrow = now.date() + timedelta(days=1)
-    next_run = datetime.datetime.combine(tomorrow, target_time, tzinfo=now.tzinfo)
-    #print(f"Next daily report run:{(next_run - now).total_seconds()}")
+    next_run = datetime.datetime.combine(
+        tomorrow, target_time, tzinfo=now.tzinfo)
+    # print(f"Next daily report run:{(next_run - now).total_seconds()}")
     await asyncio.sleep((next_run - now).total_seconds())
 
 # Event section
+
 
 async def log_event(guild, log_channel_name, title, description, color, timestamp=None):
     config = util.load_config(guild.id)
@@ -148,11 +179,13 @@ async def log_event(guild, log_channel_name, title, description, color, timestam
 
     if not log_channel:
         overwrites = {
-            guild.default_role: discord.PermissionOverwrite(read_messages=False)
+            guild.default_role: discord.PermissionOverwrite(
+                read_messages=False)
         }
         log_channel = await guild.create_text_channel(log_channel_name, overwrites=overwrites)
 
-    embed = discord.Embed(title=title, description=description, color=color, timestamp=timestamp)
+    embed = discord.Embed(title=title, description=description,
+                          color=color, timestamp=timestamp)
     await log_channel.send(embed=embed)
 
 
@@ -169,18 +202,22 @@ async def on_command_error(ctx, error):
     else:
         await ctx.send(f'Error: {error}')
 
+
 @bot.event
 async def on_member_remove(member):
     await log_event(member.guild, config['log_channel_name'], f'{member.display_name} left the server', '', discord.Color.red(), timestamp=datetime.datetime.now())
+
 
 @bot.event
 async def on_member_update(before, after):
     if before.nick != after.nick:
         await log_event(after.guild, config['log_channel_name'], f'{after.display_name} changed their nickname', f'Before: {before.nick}\nAfter: {after.nick}', discord.Color.blue())
 
+
 @bot.event
 async def on_message_delete(message):
     await log_event(message.guild, config['log_channel_name'], f'{message.author.display_name} deleted a message', message.content, discord.Color.red(), timestamp=message.created_at)
+
 
 @bot.event
 async def on_message_edit(before, after):
@@ -238,5 +275,14 @@ async def on_voice_state_update(member, before, after):
 #                 (f'Users in {after.channel.name}', util.user_list(after.channel))
 #             ]
 #             await util.send_embed(log_channel, title, description, color, fields, now)
+
+
+async def send_developer_message(client, message: str):
+    """Send a private message to the developer."""
+    # Fetch the developer's user object using their ID
+    developer = await client.fetch_user(config.DEVELOPER_ID)
+
+    # Send the private message to the developer
+    await developer.send(message)
 
 bot.run(config.TOKEN)
