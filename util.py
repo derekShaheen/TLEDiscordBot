@@ -186,7 +186,7 @@ async def send_developer_message(client, title, description, color, file=None, f
         await send_embed(developer, title, description, color, None, fields)
 
 def save_daily_report(guild_id: int, current_time: datetime, unique_users: int):
-    daily_report_file = f'guilds/{guild_id}/daily_report_data.txt'
+    daily_report_file = f'guilds/{guild_id}/daily_report_data.csv'
 
     # Create the guild directory if it doesn't exist
     guild_dir = os.path.dirname(daily_report_file)
@@ -205,7 +205,7 @@ def generate_plot(guilds: list):
     for guild in guilds:
         guild_id = guild.id
         guild_name = guild.name
-        daily_report_file = f'guilds/{guild_id}/daily_report_data.txt'
+        daily_report_file = f'guilds/{guild_id}/daily_report_data.csv'
 
         # Read the daily report data and create a DataFrame
         data = pd.read_csv(daily_report_file, names=['date', 'unique_users'], parse_dates=['date'])
