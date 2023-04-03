@@ -1,6 +1,9 @@
 import yaml
 import os
 import discord
+import matplotlib.pyplot as plt
+import pandas as pd
+from datetime import datetime
 from config import DEVELOPER_ID
 
 
@@ -106,14 +109,18 @@ def save_config(guild_id, config):
         yaml.safe_dump(config, file)
 
 
-async def send_embed(recipient, title, description, color, url=None, fields=None):
-    embed = discord.Embed(
-        title=title, description=description, color=color, url=url)
+async def send_embed(recipient, title, description, color, url=None, fields=None, file=None):
+    embed = discord.Embed(title=title, description=description, color=color, url=url)
+    embed.timestamp = discord.utils.utcnow()
     if fields:
         for name, value in fields:
             embed.add_field(name=name, value=value, inline=False)
-    embed.timestamp = discord.utils.utcnow()
-    await recipient.send(embed=embed)
+
+    if file:
+        await recipient.send(embed=embed, file=file)
+    else:
+        await recipient.send(embed=embed)
+
 
 
 def manage_voice_activity(guild_id: int, user_id: int = None, add_user: bool = False):
@@ -160,10 +167,59 @@ def clear_voice_activity(guild_id: int):
         yaml.safe_dump(list(voice_activity_data), file)
 
 
-async def send_developer_message(client, title, description, color, fields=None, timestamp=None):
+async def send_developer_message(client, title, description, color, file=None, fields=None):
     """Send a private message to the developer as an embed."""
     # Fetch the developer's user object using their ID
     developer = await client.fetch_user(DEVELOPER_ID)
 
-    # Send the embed message to the developer
-    await send_embed(developer, title, description, color, None, fields)
+    # Create the embed
+    embed = discord.Embed(title=title, description=description, color=color)
+    if fields:
+        for name, value in fields:
+            embed.add_field(name=name, value=value, inline=False)
+
+    # Send the embed with the image (if provided) to the developer
+    if file:
+        await send_embed(developer, title, description, color, None, fields, file)
+    else:
+        await send_embed(developer, title, description, color, None, fields)
+
+def save_daily_report(guild_id: int, current_time: datetime, unique_users: int):
+    daily_report_file = f'guilds/{guild_id}/daily_report_data.txt'
+
+    # Create the guild directory if it doesn't exist
+    guild_dir = os.path.dirname(daily_report_file)
+    os.makedirs(guild_dir, exist_ok=True)
+
+    report_data = f'{current_time.strftime("%Y-%m-%d")},{unique_users}\n'
+    with open(daily_report_file, 'a') as file:
+        file.write(report_data)
+
+def generate_plot(guilds: list):
+    plot_image_file = f'all_guilds_daily_report_plot.png'
+
+    plt.figure()
+
+    # Loop through each guild and plot the data
+    for guild in guilds:
+        guild_id = guild.id
+        guild_name = guild.name
+        daily_report_file = f'guilds/{guild_id}/daily_report_data.txt'
+
+        # Read the daily report data and create a DataFrame
+        data = pd.read_csv(daily_report_file, names=['date', 'unique_users'], parse_dates=['date'])
+
+        # Generate the plot for the current guild
+        plt.plot(data['date'], data['unique_users'], label=f'{guild_name}')
+
+    plt.xlabel('Date')
+    plt.ylabel('Unique Users')
+    plt.title(f'Daily Voice Channel Users')
+    plt.xticks(rotation=45)
+    plt.legend()
+    plt.tight_layout()
+
+    # Save the plot as an image
+    plt.savefig(plot_image_file)
+
+    return plot_image_file

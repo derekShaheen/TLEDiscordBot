@@ -7,7 +7,9 @@ from datetime import time, timedelta
 import pytz
 import discord
 import util
+from os import path
 from discord.ext import commands, tasks
+from discord import File
 
 user_join_times = {}
 
@@ -154,21 +156,34 @@ async def check_and_move_users():
 
 @tasks.loop(hours=24)
 async def daily_report():
-    current_time = datetime.datetime.now(pytz.timezone(config.SERVER_TIMEZONE))
-    print(message_content)
+    # Update the voice activity data
     for guild in bot.guilds:
-        for channel in guild.channels:
-            if isinstance(channel, discord.VoiceChannel):
-                for member in channel.members:
-                    userlist = util.manage_voice_activity(guild.id, None, add_user=False)
-                    message_content = f"[{current_time.strftime('%Y-%m-%d %H:%M:%S')}] [Daily Report] [{guild.name}] {len(userlist)} unique users joined a voice channel since yesterday."
-        util.clear_voice_activity(guild.id)
+        userlist = util.manage_voice_activity(guild.id, None, add_user=False)
+        current_time = datetime.datetime.now(pytz.timezone(config.SERVER_TIMEZONE))
+        unique_users = len(userlist)
 
+        # Save the daily report data to a file
+        util.save_daily_report(guild.id, current_time, unique_users)
+
+    # Generate the plot and get the image file path
+    plot_image_file = util.generate_plot(bot.guilds)
+
+    # Create the message embed
+    title = f"{current_time.strftime('%Y-%m-%d')} Daily Report for All Guilds"
+    description = "Plot displays the number of unique users who joined a voice channel since yesterday by guild."
+    color = discord.Color.green()
+
+    # Send the embed with the image to the developer
+    with open(plot_image_file, 'rb') as file:
+        await util.send_developer_message(bot, title, description, color, file=File(file))
+    
+    for guild in bot.guilds:
+        util.clear_voice_activity(guild.id)
     # Send the message to the developer as an embed
-    title = "Daily Report"
-    description = message_content
-    color = discord.Color.blue()
-    await util.send_developer_message(bot, title, description, color)
+    # title = "Daily Report"
+    # description = message_content
+    # color = discord.Color.blue()
+    # await util.send_developer_message(bot, title, description, color)
 
 # Before loop section
 
