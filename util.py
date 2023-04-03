@@ -2,6 +2,7 @@ import yaml
 import os
 import discord
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
 import pandas as pd
 from datetime import datetime
 from config import DEVELOPER_ID
@@ -125,7 +126,7 @@ async def send_embed(recipient, title, description, color, url=None, fields=None
 
 def manage_voice_activity(guild_id: int, user_id: int = None, add_user: bool = False):
     guild_dir = f'guilds/{guild_id}'
-    voice_activity_file = f'{guild_dir}/voice_activity.yaml'
+    voice_activity_file = f'{guild_dir}/voice_activity.yml'
 
     # Create the guild directory if it doesn't exist
     os.makedirs(guild_dir, exist_ok=True)
@@ -154,7 +155,7 @@ def manage_voice_activity(guild_id: int, user_id: int = None, add_user: bool = F
 
 def clear_voice_activity(guild_id: int):
     guild_dir = f'guilds/{guild_id}'
-    voice_activity_file = f'{guild_dir}/voice_activity.yaml'
+    voice_activity_file = f'{guild_dir}/voice_activity.yml'
 
     # Create the guild directory if it doesn't exist
     os.makedirs(guild_dir, exist_ok=True)
@@ -218,6 +219,10 @@ def generate_plot(guilds: list):
     plt.xticks(rotation=45)
     plt.legend()
     plt.tight_layout()
+
+    # Set the y-axis ticks to integer values
+    ax = plt.gca()
+    ax.yaxis.set_major_locator(MaxNLocator(integer=True))
 
     # Save the plot as an image
     plt.savefig(plot_image_file)
