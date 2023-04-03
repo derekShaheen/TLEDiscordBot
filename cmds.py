@@ -36,13 +36,13 @@ async def move(ctx, destination_name: str = None, source_name: str = None):
 
     # Check if the bot is connected to the guild
     if ctx.guild is None:
-        user_id = ctx.author.id
-        associated_guilds = await util.find_user_guild(ctx, user_id)
+        # user_id = ctx.author.id
+        # associated_guilds = await util.find_user_guild(ctx, user_id)
         
-        if len(associated_guilds) == 1:
-            for guild in associated_guilds:
-                response += f"{guild.name}\n"
-                ctx.guild = guild
+        # if len(associated_guilds) == 1:
+        #     for guild in associated_guilds:
+        #         response += f"{guild.name}\n"
+        #         ctx.guild = guild
 
         await ctx.send('Error: This command can only be used in a server.')
         return
