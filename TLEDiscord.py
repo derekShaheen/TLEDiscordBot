@@ -52,7 +52,7 @@ async def on_ready():
     check_and_move_users.start()
 
     for guild in bot.guilds:
-        util.clear_voice_activity(guild.id)
+        #util.clear_voice_activity(guild.id)
         for channel in guild.channels:
             if isinstance(channel, discord.VoiceChannel):
                 for member in channel.members:
