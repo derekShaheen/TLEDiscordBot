@@ -167,10 +167,9 @@ async def view_allowed_roles(ctx):
     allowed_roles = util.load_config(ctx.guild.id).get('allowed_roles', [])
 
     # If the user is not an administrator, check if they have an allowed role
-    if not ctx.author.guild_permissions.administrator:
-        if not has_required_role(ctx.author, allowed_roles):
-            await ctx.send("You do not have the required role to use this command.")
-            return
+    if not has_required_role(ctx.author, allowed_roles):
+        await ctx.send("You do not have the required role to use this command.")
+        return
 
     if not allowed_roles:
         await ctx.send("No allowed roles have been set.")
@@ -182,10 +181,9 @@ async def voice_stats(ctx):
     allowed_roles = util.load_config(ctx.guild.id).get('allowed_roles', [])
 
     # If the user is not an administrator, check if they have an allowed role
-    if not ctx.author.guild_permissions.administrator:
-        if not has_required_role(ctx.author, allowed_roles):
-            await ctx.send("You do not have the required role to use this command.")
-            return
+    if not has_required_role(ctx.author, allowed_roles):
+        await ctx.send("You do not have the required role to use this command.")
+        return
 
     file_path = f'guilds/{ctx.guild.id}/voice_activity.yaml'
 

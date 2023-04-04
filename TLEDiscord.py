@@ -9,6 +9,7 @@ from os import execv
 import sys
 from discord.ext import commands, tasks
 from discord import File
+import math 
 
 user_join_times = {}
 
@@ -49,13 +50,7 @@ async def on_ready():
     daily_report.start()
     check_and_move_users.start()
 
-    for guild in bot.guilds:
-        #util.clear_voice_activity(guild.id)
-        for channel in guild.channels:
-            if isinstance(channel, discord.VoiceChannel):
-                for member in channel.members:
-                    util.manage_voice_activity(
-                        guild.id, member.id, add_user=True)
+    util.populate_userlist(bot)
 
     print('Voice activity data updated.')
 
@@ -71,7 +66,7 @@ async def on_ready():
     title = "Bot Online"
     description = message_content
     color = discord.Color.green()
-    await util.send_developer_message(bot, title, description, color)
+    #await util.send_developer_message(bot, title, description, color)
 
     print("Ready...")
     heartbeat_proc()
@@ -178,11 +173,8 @@ async def daily_report():
 
     for guild in bot.guilds:
         util.clear_voice_activity(guild.id)
-    # Send the message to the developer as an embed
-    # title = "Daily Report"
-    # description = message_content
-    # color = discord.Color.blue()
-    # await util.send_developer_message(bot, title, description, color)
+
+    util.populate_userlist(bot)
 
 # Before loop section
 
@@ -200,15 +192,19 @@ def get_initial_delay(target_time: datetime.time = None, interval: timedelta = N
             tomorrow, target_time, tzinfo=now.tzinfo)
     elif interval:
         # Schedule task at the next interval
-        next_run = now + interval - \
-            timedelta(microseconds=now.microsecond % interval.microseconds)
+        interval_seconds = interval.total_seconds()
+        elapsed_time = (now - now.replace(hour=0, minute=0, second=0, microsecond=0)).total_seconds()
+        next_run_seconds = math.ceil(elapsed_time / interval_seconds) * interval_seconds
+        next_run = now.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(seconds=next_run_seconds)
 
     return (next_run - now).total_seconds()
+
 
 
 @heartbeat.before_loop
 async def before_heartbeat():
     initial_delay = get_initial_delay(interval=timedelta(minutes=30))
+    #print('Heartbeat loop will start in {} seconds.'.format(initial_delay))
     await asyncio.sleep(initial_delay)
 
 
@@ -216,13 +212,15 @@ async def before_heartbeat():
 async def before_check_and_move_users():
     target_time = datetime.time(hour=18, minute=0)
     initial_delay = get_initial_delay(target_time=target_time)
+    #print('Check/Move loop will start in {} seconds.'.format(initial_delay))
     await asyncio.sleep(initial_delay)
 
 
 @daily_report.before_loop
 async def before_daily_report():
-    target_time = datetime.time(hour=6, minute=0)
+    target_time = datetime.time(hour=6, minute=00)
     initial_delay = get_initial_delay(target_time=target_time)
+    #print('Daily Report loop will start in {} seconds.'.format(initial_delay))
     await asyncio.sleep(initial_delay)
 
 

@@ -5,7 +5,9 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 import pandas as pd
 from datetime import datetime
-from config import DEVELOPER_ID
+import pytz
+from datetime import time, timedelta
+from config import DEVELOPER_ID, SERVER_TIMEZONE
 
 
 def pluralize(count, singular, plural):
@@ -192,12 +194,12 @@ def save_daily_report(guild_id: int, current_time: datetime, unique_users: int):
     guild_dir = os.path.dirname(daily_report_file)
     os.makedirs(guild_dir, exist_ok=True)
 
-    report_data = f'{current_time.strftime("%Y-%m-%d")},{unique_users}\n'
+    report_data = f'{current_time},{unique_users}\n'
     with open(daily_report_file, 'a') as file:
         file.write(report_data)
 
 def generate_plot(guilds: list):
-    plot_image_file = f'all_guilds_daily_report_plot.png'
+    plot_image_file = f'daily_report_plot.png'
 
     plt.figure()
 
@@ -228,3 +230,21 @@ def generate_plot(guilds: list):
     plt.savefig(plot_image_file)
 
     return plot_image_file
+
+# Get the current time with config.SERVER_TIMEZONE
+def get_current_time(show_time=True, no_format=False):
+    if no_format:
+        return datetime.now(pytz.timezone(SERVER_TIMEZONE))
+    else:
+        if show_time:
+            return datetime.now(pytz.timezone(SERVER_TIMEZONE)).strftime('%Y-%m-%d %H:%M:%S')
+        else:
+            return datetime.now(pytz.timezone(SERVER_TIMEZONE)).strftime('%Y-%m-%d')
+        
+def populate_userlist(bot):
+    for guild in bot.guilds:
+        for channel in guild.channels:
+            if isinstance(channel, discord.VoiceChannel):
+                for member in channel.members:
+                    manage_voice_activity(
+                        guild.id, member.id, add_user=True)
