@@ -7,7 +7,8 @@ from datetime import time, timedelta
 import pytz
 import discord
 import util
-from os import path
+from os import path, execv
+import sys
 from discord.ext import commands, tasks
 from discord import File
 
@@ -16,7 +17,7 @@ user_join_times = {}
 tle_prefix = '!'
 
 intents = discord.Intents().all()
-bot = commands.Bot(command_prefix=tle_prefix, intents=intents)
+bot = commands.Bot(command_prefix=tle_prefix, intents=intents, reconnect=True)
 
 bot.add_command(cmds.move)
 bot.add_command(cmds.set_log_channel)
@@ -33,7 +34,8 @@ async def on_ready():
     print("Logged in as")
     print("\tUsername: %s" % bot.user.name)
     print("\tID: %s" % bot.user.id)
-    print(f"\tInvite URL: https://discordapp.com/oauth2/authorize?client_id={bot.user.id}&scope=bot&permissions=8")
+    print(
+        f"\tInvite URL: https://discordapp.com/oauth2/authorize?client_id={bot.user.id}&scope=bot&permissions=8")
     print("----------------------")
 
     print("Bot is running on the following servers:")
@@ -54,7 +56,8 @@ async def on_ready():
         for channel in guild.channels:
             if isinstance(channel, discord.VoiceChannel):
                 for member in channel.members:
-                    util.manage_voice_activity(guild.id, member.id, add_user=True)
+                    util.manage_voice_activity(
+                        guild.id, member.id, add_user=True)
 
     print('Voice activity data updated.')
 
@@ -159,7 +162,8 @@ async def daily_report():
     # Update the voice activity data
     for guild in bot.guilds:
         userlist = util.manage_voice_activity(guild.id, None, add_user=False)
-        current_time = datetime.datetime.now(pytz.timezone(config.SERVER_TIMEZONE))
+        current_time = datetime.datetime.now(
+            pytz.timezone(config.SERVER_TIMEZONE))
         unique_users = len(userlist)
 
         # Save the daily report data to a file
@@ -176,7 +180,7 @@ async def daily_report():
     # Send the embed with the image to the developer
     with open(plot_image_file, 'rb') as file:
         await util.send_developer_message(bot, title, description, color, file=File(file))
-    
+
     for guild in bot.guilds:
         util.clear_voice_activity(guild.id)
     # Send the message to the developer as an embed
@@ -188,45 +192,44 @@ async def daily_report():
 # Before loop section
 
 
-@heartbeat.before_loop
-async def before_heartbeat():
+def get_initial_delay(target_time: datetime.time = None, interval: timedelta = None) -> float:
     now = datetime.datetime.now(pytz.timezone(config.SERVER_TIMEZONE))
 
-    if now.minute < 30:
-        target_minute = 30
-    else:
-        target_minute = 0
+    if target_time:
+        # Schedule task at the target time
+        if now.time() >= target_time:
+            tomorrow = now.date() + timedelta(days=1)
+        else:
+            tomorrow = now.date()
+        next_run = datetime.datetime.combine(
+            tomorrow, target_time, tzinfo=now.tzinfo)
+    elif interval:
+        # Schedule task at the next interval
+        next_run = now + interval - \
+            timedelta(microseconds=now.microsecond % interval.microseconds)
 
-    if target_minute == 0:
-        next_run = now.replace(
-            minute=0, second=0, microsecond=0) + timedelta(hours=1)
-    else:
-        next_run = now.replace(minute=30, second=0, microsecond=0)
+    return (next_run - now).total_seconds()
 
-    # print(f"Next heartbeat: {(next_run - now).total_seconds()}")
-    await asyncio.sleep((next_run - now).total_seconds())
+
+@heartbeat.before_loop
+async def before_heartbeat():
+    initial_delay = get_initial_delay(interval=timedelta(minutes=30))
+    await asyncio.sleep(initial_delay)
 
 
 @check_and_move_users.before_loop
 async def before_check_and_move_users():
-    now = datetime.datetime.now(pytz.timezone(config.SERVER_TIMEZONE))
-    target_time = datetime.time(hour=18, minute=00)
-    tomorrow = now.date() + timedelta(days=1)
-    next_run = datetime.datetime.combine(
-        tomorrow, target_time, tzinfo=now.tzinfo)
-    # print(f"Next twerk move run:{(next_run - now).total_seconds()}")
-    await asyncio.sleep((next_run - now).total_seconds())
+    target_time = datetime.time(hour=18, minute=0)
+    initial_delay = get_initial_delay(target_time=target_time)
+    await asyncio.sleep(initial_delay)
 
 
 @daily_report.before_loop
 async def before_daily_report():
-    now = datetime.datetime.now(pytz.timezone(config.SERVER_TIMEZONE))
-    target_time = datetime.time(hour=6, minute=00)
-    tomorrow = now.date() + timedelta(days=1)
-    next_run = datetime.datetime.combine(
-        tomorrow, target_time, tzinfo=now.tzinfo)
-    # print(f"Next daily report run:{(next_run - now).total_seconds()}")
-    await asyncio.sleep((next_run - now).total_seconds())
+    target_time = datetime.time(hour=6, minute=0)
+    initial_delay = get_initial_delay(target_time=target_time)
+    await asyncio.sleep(initial_delay)
+
 
 # Event section
 
@@ -254,6 +257,9 @@ async def log_event(guild, log_channel_name, title, description, color, timestam
 async def on_command_error(ctx, error):
     if isinstance(error, commands.CommandNotFound):
         return
+    elif isinstance(error, (discord.HTTPException, discord.GatewayNotFound, discord.ConnectionClosed)):
+        await ctx.send(f'Error: Discord API error: {error}')
+        pass
     elif isinstance(error, commands.MissingRequiredArgument):
         await ctx.send(f'Error: Missing required argument: {error.param.name}')
     elif isinstance(error, commands.BadArgument):
@@ -293,14 +299,14 @@ async def on_message_edit(before, after):
 #     if not message.guild:  # Check if the message is a private message
 #         user_id = message.author.id
 #         associated_guilds = await util.find_user_guild(bot, user_id)
-        
+
 #         if associated_guilds:
 #             response = "You are associated with the following server(s):\n"
 #             for guild in associated_guilds:
 #                 response += f"{guild.name}\n"
 #         else:
 #             response = "You are not associated with any servers the bot is connected to."
-        
+
 #         await message.channel.send(response)
 
 
@@ -376,4 +382,26 @@ async def on_voice_state_update(member, before, after):
             ]
             await util.send_embed(log_channel, title, description, color, None, fields)
 
-bot.run(config.TOKEN)
+async def run_bot():
+    while True:
+        try:
+            await bot.start(config.TOKEN)  # Replace TOKEN with your bot token
+        except (discord.ConnectionClosed, discord.GatewayNotFound, discord.HTTPException) as exc:
+            print(f"Connection error occurred: {exc}, trying to reconnect...")
+
+            # Wait for bot to be ready with a timeout
+            try:
+                await asyncio.wait_for(bot.wait_until_ready(), timeout=60)
+            except asyncio.TimeoutError:
+                print("Reconnect failed, restarting the bot...")
+                execv(sys.executable, ['python'] + sys.argv)
+        except KeyboardInterrupt:
+            await bot.close()
+            break
+        except Exception as exc:
+            print(f"An unexpected error occurred: {exc}")
+            await bot.close()
+            break
+
+if __name__ == "__main__":
+    asyncio.run(run_bot())
