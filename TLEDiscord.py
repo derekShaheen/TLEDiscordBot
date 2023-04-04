@@ -1,13 +1,11 @@
 import asyncio
 import cmds
-
 import config
 import datetime
 from datetime import time, timedelta
-import pytz
 import discord
 import util
-from os import path, execv
+from os import execv
 import sys
 from discord.ext import commands, tasks
 from discord import File
@@ -81,7 +79,7 @@ async def on_ready():
 
 @bot.event
 async def on_guild_join(guild):
-    current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    current_time = util.get_current_time()
     print(f"[{current_time}] [{guild.name}] The bot has been added to the server: {guild.name} (id: {guild.id}) with {guild.member_count} members.")
 
     # Prepare the message content
@@ -96,7 +94,7 @@ async def on_guild_join(guild):
 
 @bot.event
 async def on_guild_remove(guild):
-    current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    current_time = util.get_current_time()
     print(f"[{current_time}] [{guild.name}] The bot has been removed from the server: {guild.name} (id: {guild.id}) with {guild.member_count} members.")
 
     # Prepare the message content
@@ -122,14 +120,13 @@ def heartbeat_proc():
         users_in_voice_chat = sum(
             1 for member in guild.members if member.voice)
 
-        current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        current_time = util.get_current_time()
         print(f"[{current_time}] [{guild.name}] Total Users: {total_users}\t| Users in Voice Chat: {users_in_voice_chat}")
 
 
 @tasks.loop(hours=24)
 async def check_and_move_users():
-    current_time = datetime.datetime.now(pytz.timezone(
-        config.SERVER_TIMEZONE))  # Adjust the timezone if needed
+    current_time = util.get_current_time()
     target_time = time(hour=18, minute=00)
 
     if current_time.time() > target_time:
@@ -147,14 +144,13 @@ async def check_and_move_users():
                         moved_users_count += 1
                     except discord.errors.HTTPException as e:
                         print(f'Error moving {member.display_name}: {str(e)}')
-                current_time = datetime.datetime.now(
-                    pytz.timezone(config.SERVER_TIMEZONE))
+                current_time = util.get_current_time()
 
                 if moved_users_count > 0:
-                    print(f"[{current_time.strftime('%Y-%m-%d %H:%M:%S')}] [AutoMove] Moved {util.pluralize(moved_users_count, 'user', 'users')} from {source_channel.name} to {member_general_channel.name}")
+                    print(f"[{current_time}] [AutoMove] Moved {util.pluralize(moved_users_count, 'user', 'users')} from {source_channel.name} to {member_general_channel.name}")
                 else:
                     print(
-                        f"[{current_time.strftime('%Y-%m-%d %H:%M:%S')}] [AutoMove] No users to move from {source_channel.name} to {member_general_channel.name}")
+                        f"[{current_time}] [AutoMove] No users to move from {source_channel.name} to {member_general_channel.name}")
 
 
 @tasks.loop(hours=24)
@@ -162,8 +158,7 @@ async def daily_report():
     # Update the voice activity data
     for guild in bot.guilds:
         userlist = util.manage_voice_activity(guild.id, None, add_user=False)
-        current_time = datetime.datetime.now(
-            pytz.timezone(config.SERVER_TIMEZONE))
+        current_time = util.get_current_time(False)
         unique_users = len(userlist)
 
         # Save the daily report data to a file
@@ -173,7 +168,7 @@ async def daily_report():
     plot_image_file = util.generate_plot(bot.guilds)
 
     # Create the message embed
-    title = f"{current_time.strftime('%Y-%m-%d')} Daily Report for All Guilds"
+    title = f"{current_time} Daily Report for All Guilds"
     description = "Plot displays the number of unique users who joined a voice channel since yesterday by guild."
     color = discord.Color.green()
 
@@ -193,7 +188,7 @@ async def daily_report():
 
 
 def get_initial_delay(target_time: datetime.time = None, interval: timedelta = None) -> float:
-    now = datetime.datetime.now(pytz.timezone(config.SERVER_TIMEZONE))
+    now = util.get_current_time(False, True)
 
     if target_time:
         # Schedule task at the target time
@@ -341,7 +336,7 @@ async def on_voice_state_update(member, before, after):
             log_channel = await member.guild.create_text_channel(log_channel_name, overwrites=overwrites)
 
         user_id = member.id
-        now = datetime.datetime.utcnow()
+        now = util.get_current_time(False, True)
 
         if before.channel is None:
             user_join_times[user_id] = now
