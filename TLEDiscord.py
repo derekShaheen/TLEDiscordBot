@@ -46,7 +46,7 @@ async def on_ready():
     print("\tID: %s" % bot.user.id)
     print(
         f"\tInvite URL: https://discordapp.com/oauth2/authorize?client_id={bot.user.id}&scope=bot&permissions=8")
-    print(f"Connection latency: {bot.latency * 1000:.2f} ms")
+    print(f"Connection latency: {bot.latency * 1000:.0f}ms")
     print("----------------------")
 
     print("Bot is running on the following servers:")
@@ -130,8 +130,8 @@ async def heartbeat(ctx):
 def heartbeat_proc():
     global heartbeat_counter
 
-    header = "{:<20} | {:<7} | {:<10} | {:<20} | {:<15} | {:<10} | {:<12}"
-    row_format = "{:<20} | {:<10} | {:<10} | {:<20} | {:<15} | {:<10} | {:<12}"
+    header      = "{:<20} | {:<7} | {:<10} | {:<20} | {:<11} | {:<8} | {:<12}"
+    row_format  = "{:<20} | {:<10} | {:<10} | {:<20} | {:<11} | {:<8} | {:<12}"
 
     # Print the header only once every X times
     if heartbeat_counter % 24 == 0:
@@ -148,13 +148,21 @@ def heartbeat_proc():
         current_time = util.get_current_time()
 
         # Truncate the guild name to 17 characters
-        truncated_guild_name = guild.name[:17]
+        truncated_guild_name = guild.name[:16]
 
         # Set latency color based on the value
         latency_color = "green" if latency_ms < 100 else ("yellow" if latency_ms <= 200 else "red")
-        latency_text = colored(f"{latency_ms:.2f}ms", latency_color)
-
-        print(row_format.format(current_time, latency_text, uptime_str, f"[{i}] {truncated_guild_name}", total_users, users_in_voice_chat, len(unique_users_in_voice_chat)))
+        if(latency_ms >= 1000):
+            latency_text = colored(f"{latency_ms:.0f}ms", latency_color)
+        elif(latency_ms >= 100):
+            latency_text = colored(f"{latency_ms:.1f}ms", latency_color)
+        else:
+            latency_text = colored(f"{latency_ms:.2f}ms", latency_color)
+        
+        if(len(bot.guilds) > 1):
+            print(row_format.format(current_time, latency_text, uptime_str, f"[{i}] {truncated_guild_name}", total_users, users_in_voice_chat, len(unique_users_in_voice_chat)))
+        else:
+            print(row_format.format(current_time, latency_text, uptime_str, f"{truncated_guild_name}", total_users, users_in_voice_chat, len(unique_users_in_voice_chat)))
 
     # Increment the counter
     heartbeat_counter += 1
@@ -181,8 +189,7 @@ async def check_and_move_users():
             if moved_users_count > 0:
                 print(f"[{current_time}] [AutoMove] Moved {util.pluralize(moved_users_count, 'user', 'users')} from {source_channel.name} to {member_general_channel.name}")
             else:
-                print(
-                    f"[{current_time}] [AutoMove] No users to move from {source_channel.name} to {member_general_channel.name}")
+                print(f"[{current_time}] [AutoMove] No users to move from {source_channel.name} to {member_general_channel.name}")
 
 
 @tasks.loop(hours=24)
@@ -250,7 +257,7 @@ async def before_heartbeat_loop():
 async def before_check_and_move_users():
     target_time = time(hour=18, minute=0)
     initial_delay = get_initial_delay(target_time=target_time)
-    print('First Check/Move scheduled for: {}'.format(target_time))
+    print('First Check/Move scheduled for: \t{}'.format(target_time))
     await asyncio.sleep(initial_delay)
 
 
@@ -258,7 +265,7 @@ async def before_check_and_move_users():
 async def before_daily_report():
     target_time = time(hour=6, minute=00)
     initial_delay = get_initial_delay(target_time=target_time)
-    print('Daily Report loop scheduled for: {}'.format(target_time))
+    print('Daily Report loop scheduled for:\t{}'.format(target_time))
     await asyncio.sleep(initial_delay)
 
 
@@ -426,6 +433,9 @@ async def run_bot():
             except asyncio.TimeoutError:
                 print("Reconnect failed, restarting the bot...")
                 execv(sys.executable, ['python'] + sys.argv)
+        except discord.errors.LoginFailure:
+            print("An improper token was provided. Please check your token and try again.")
+            execv(sys.executable, ['python'] + sys.argv)
         except KeyboardInterrupt:
             await bot.close()
             break
