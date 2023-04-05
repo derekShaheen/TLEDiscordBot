@@ -1,16 +1,27 @@
+# Standard library imports
 import asyncio
+from datetime import time, timedelta, datetime
+import math
+import sys
+from os import execv
+
+# Third-party imports
+import discord
+from discord.ext import commands, tasks
+# from rich import print
+# from rich.table import Table
+# from rich.console import Console
+from termcolor import colored
+
+
+# Local imports
 import cmds
 import config
-import datetime
-from datetime import time, timedelta
-import discord
 import util
-from os import execv
-import sys
-from discord.ext import commands, tasks
-from discord import File
-import math 
 
+
+bot_start_time = datetime.now()
+heartbeat_counter = 0
 user_join_times = {}
 
 tle_prefix = '!'
@@ -35,6 +46,7 @@ async def on_ready():
     print("\tID: %s" % bot.user.id)
     print(
         f"\tInvite URL: https://discordapp.com/oauth2/authorize?client_id={bot.user.id}&scope=bot&permissions=8")
+    print(f"Connection latency: {bot.latency * 1000:.2f} ms")
     print("----------------------")
 
     print("Bot is running on the following servers:")
@@ -46,9 +58,9 @@ async def on_ready():
 
     print("Initializing and scheduling tasks...")
 
-    heartbeat.start()
-    daily_report.start()
     check_and_move_users.start()
+    daily_report.start()
+    heartbeat_loop.start()
 
     util.populate_userlist(bot)
 
@@ -57,6 +69,7 @@ async def on_ready():
     print("Bot Commands:")
     for command in sorted(bot.commands, key=lambda cmd: cmd.name):
         print(f"\t!{command.name}")
+    print("")
 
     # Prepare the message content
     message_content = f'{bot.user} is now online and connected to the following servers:\n'
@@ -68,8 +81,8 @@ async def on_ready():
     color = discord.Color.green()
     #await util.send_developer_message(bot, title, description, color)
 
-    print("Ready...")
-    heartbeat_proc()
+    #print("Ready...")
+    
 
 
 @bot.event
@@ -105,47 +118,71 @@ async def on_guild_remove(guild):
 
 
 @tasks.loop(minutes=30)
-async def heartbeat():
+async def heartbeat_loop():
     heartbeat_proc()
 
+@bot.command()
+async def heartbeat(ctx):
+    if ctx.author.id == config.DEVELOPER_ID:
+        await ctx.send('Running heartbeat...')
+        heartbeat_proc()
 
 def heartbeat_proc():
-    for guild in bot.guilds:
+    global heartbeat_counter
+
+    header = "{:<20} | {:<7} | {:<10} | {:<20} | {:<15} | {:<10} | {:<12}"
+    row_format = "{:<20} | {:<10} | {:<10} | {:<20} | {:<15} | {:<10} | {:<12}"
+
+    # Print the header only once every X times
+    if heartbeat_counter % 24 == 0:
+        print(header.format("Heartbeat", "Ping", "Uptime", "Guild", "Total Users", "In Voice", "Daily Unique"))
+
+    for i, guild in enumerate(bot.guilds, start=1):
         total_users = len(guild.members)
-        users_in_voice_chat = sum(
-            1 for member in guild.members if member.voice)
+        users_in_voice_chat = sum(1 for member in guild.members if member.voice)
+        unique_users_in_voice_chat = util.manage_voice_activity(guild.id, None, add_user=False)
+        latency_ms = bot.latency * 1000  # Convert to milliseconds
+        uptime = datetime.now() - bot_start_time
+        uptime_str = str(uptime).split('.')[0]  # Remove microseconds
 
         current_time = util.get_current_time()
-        print(f"[{current_time}] [{guild.name}] Total Users: {total_users}\t| Users in Voice Chat: {users_in_voice_chat}")
+
+        # Truncate the guild name to 17 characters
+        truncated_guild_name = guild.name[:17]
+
+        # Set latency color based on the value
+        latency_color = "green" if latency_ms < 100 else ("yellow" if latency_ms <= 200 else "red")
+        latency_text = colored(f"{latency_ms:.2f}ms", latency_color)
+
+        print(row_format.format(current_time, latency_text, uptime_str, f"[{i}] {truncated_guild_name}", total_users, users_in_voice_chat, len(unique_users_in_voice_chat)))
+
+    # Increment the counter
+    heartbeat_counter += 1
 
 
 @tasks.loop(hours=24)
 async def check_and_move_users():
-    current_time = util.get_current_time()
-    target_time = time(hour=18, minute=00)
+    for guild in bot.guilds:
+        source_channel = discord.utils.get(
+            guild.voice_channels, name="Twerk")
+        member_general_channel = discord.utils.get(
+            guild.voice_channels, name="Member General")
 
-    if current_time.time() > target_time:
-        for guild in bot.guilds:
-            source_channel = discord.utils.get(
-                guild.voice_channels, name="Twerk")
-            member_general_channel = discord.utils.get(
-                guild.voice_channels, name="Member General")
+        if source_channel and member_general_channel:
+            moved_users_count = 0
+            for member in source_channel.members:
+                try:
+                    await member.move_to(member_general_channel)
+                    moved_users_count += 1
+                except discord.errors.HTTPException as e:
+                    print(f'Error moving {member.display_name}: {str(e)}')
+            current_time = util.get_current_time()
 
-            if source_channel and member_general_channel:
-                moved_users_count = 0
-                for member in source_channel.members:
-                    try:
-                        await member.move_to(member_general_channel)
-                        moved_users_count += 1
-                    except discord.errors.HTTPException as e:
-                        print(f'Error moving {member.display_name}: {str(e)}')
-                current_time = util.get_current_time()
-
-                if moved_users_count > 0:
-                    print(f"[{current_time}] [AutoMove] Moved {util.pluralize(moved_users_count, 'user', 'users')} from {source_channel.name} to {member_general_channel.name}")
-                else:
-                    print(
-                        f"[{current_time}] [AutoMove] No users to move from {source_channel.name} to {member_general_channel.name}")
+            if moved_users_count > 0:
+                print(f"[{current_time}] [AutoMove] Moved {util.pluralize(moved_users_count, 'user', 'users')} from {source_channel.name} to {member_general_channel.name}")
+            else:
+                print(
+                    f"[{current_time}] [AutoMove] No users to move from {source_channel.name} to {member_general_channel.name}")
 
 
 @tasks.loop(hours=24)
@@ -169,7 +206,7 @@ async def daily_report():
 
     # Send the embed with the image to the developer
     with open(plot_image_file, 'rb') as file:
-        await util.send_developer_message(bot, title, description, color, file=File(file))
+        await util.send_developer_message(bot, title, description, color, file=discord.File(file))
 
     for guild in bot.guilds:
         util.clear_voice_activity(guild.id)
@@ -179,7 +216,7 @@ async def daily_report():
 # Before loop section
 
 
-def get_initial_delay(target_time: datetime.time = None, interval: timedelta = None) -> float:
+def get_initial_delay(target_time: time = None, interval: timedelta = None) -> float:
     now = util.get_current_time(False, True)
 
     if target_time:
@@ -188,7 +225,7 @@ def get_initial_delay(target_time: datetime.time = None, interval: timedelta = N
             tomorrow = now.date() + timedelta(days=1)
         else:
             tomorrow = now.date()
-        next_run = datetime.datetime.combine(
+        next_run = datetime.combine(
             tomorrow, target_time, tzinfo=now.tzinfo)
     elif interval:
         # Schedule task at the next interval
@@ -201,26 +238,27 @@ def get_initial_delay(target_time: datetime.time = None, interval: timedelta = N
 
 
 
-@heartbeat.before_loop
-async def before_heartbeat():
+@heartbeat_loop.before_loop
+async def before_heartbeat_loop():
+    heartbeat_proc()
     initial_delay = get_initial_delay(interval=timedelta(minutes=30))
-    #print('Heartbeat loop will start in {} seconds.'.format(initial_delay))
+    #print('Heartbeat loop scheduled for: {}'.format(initial_delay))
     await asyncio.sleep(initial_delay)
 
 
 @check_and_move_users.before_loop
 async def before_check_and_move_users():
-    target_time = datetime.time(hour=18, minute=0)
+    target_time = time(hour=18, minute=0)
     initial_delay = get_initial_delay(target_time=target_time)
-    #print('Check/Move loop will start in {} seconds.'.format(initial_delay))
+    print('First Check/Move scheduled for: {}'.format(target_time))
     await asyncio.sleep(initial_delay)
 
 
 @daily_report.before_loop
 async def before_daily_report():
-    target_time = datetime.time(hour=6, minute=00)
+    target_time = time(hour=6, minute=00)
     initial_delay = get_initial_delay(target_time=target_time)
-    #print('Daily Report loop will start in {} seconds.'.format(initial_delay))
+    print('Daily Report loop scheduled for: {}'.format(target_time))
     await asyncio.sleep(initial_delay)
 
 

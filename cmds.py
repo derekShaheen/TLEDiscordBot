@@ -199,3 +199,5 @@ async def voice_stats(ctx):
         output += f'{channel_name}:\n  Joins: {stats["joins"]}\n  Leaves: {stats["leaves"]}\n\n'
 
     await ctx.send(output)
+
+
