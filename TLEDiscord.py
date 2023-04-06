@@ -8,10 +8,13 @@ from os import execv
 # Third-party imports
 import discord
 from discord.ext import commands, tasks
+from io import StringIO
 # from rich import print
-# from rich.table import Table
-# from rich.console import Console
-from termcolor import colored
+from rich.table import Table
+from rich.live import Live
+from rich.traceback import install
+from rich.console import Console
+import re
 
 
 # Local imports
@@ -19,8 +22,7 @@ import cmds
 import config
 import util
 
-
-bot_start_time = datetime.now()
+install()
 heartbeat_counter = 0
 user_join_times = {}
 
@@ -34,6 +36,7 @@ bot.add_command(cmds.set_log_channel)
 bot.add_command(cmds.toggle_logging)
 bot.add_command(cmds.modify_allowed_roles)
 bot.add_command(cmds.view_allowed_roles)
+bot_start_time = datetime.now() + timedelta(seconds=2)
 
 # Initialize the bot
 
@@ -41,27 +44,20 @@ bot.add_command(cmds.view_allowed_roles)
 @bot.event
 async def on_ready():
     print("----------------------")
-    print("Logged in as")
+    print("Logged in at: %s" % util.get_current_time())
     print("\tUsername: %s" % bot.user.name)
     print("\tID: %s" % bot.user.id)
     print(
         f"\tInvite URL: https://discordapp.com/oauth2/authorize?client_id={bot.user.id}&scope=bot&permissions=8")
-    print(f"Connection latency: {bot.latency * 1000:.0f}ms")
+    # print(f"Connection latency: {bot.latency * 1000:.0f}ms")
     print("----------------------")
 
     print("Bot is running on the following servers:")
     for guild in bot.guilds:
         print(f"\tServer: {guild.name} (ID: {guild.id})")
-        print(f"\t\tMember count: {len(guild.members)}")
+        #print(f"\t\tMember count: {len(guild.members)}")
 
     print("----------------------")
-
-    print("Initializing and scheduling tasks...")
-
-    check_and_move_users.start()
-    daily_report.start()
-    heartbeat_loop.start()
-
     util.populate_userlist(bot)
 
     print('Voice activity data updated.')
@@ -69,7 +65,12 @@ async def on_ready():
     print("Bot Commands:")
     for command in sorted(bot.commands, key=lambda cmd: cmd.name):
         print(f"\t!{command.name}")
-    print("")
+
+    print("\nInitializing and scheduling tasks...")
+
+    daily_report.start()
+    check_and_move_users.start()
+    heartbeat_loop.start()
 
     # Prepare the message content
     message_content = f'{bot.user} is now online and connected to the following servers:\n'
@@ -79,10 +80,9 @@ async def on_ready():
     title = "Bot Online"
     description = message_content
     color = discord.Color.green()
-    #await util.send_developer_message(bot, title, description, color)
+    # await util.send_developer_message(bot, title, description, color)
 
-    #print("Ready...")
-    
+    # print("Ready...")
 
 
 @bot.event
@@ -117,55 +117,87 @@ async def on_guild_remove(guild):
 # Loop section
 
 
-@tasks.loop(minutes=30)
+@tasks.loop(seconds=1)
 async def heartbeat_loop():
-    heartbeat_proc()
+    # heartbeat_proc()
+    await live_heartbeat()
 
 @bot.command()
 async def heartbeat(ctx):
     if ctx.author.id == config.DEVELOPER_ID:
-        await ctx.send('Running heartbeat...')
-        heartbeat_proc()
+        #await ctx.send('Running heartbeat...')
+        table = generate_table()
+        await send_table_as_code_block(ctx, table)
 
-def heartbeat_proc():
-    global heartbeat_counter
+def strip_control_characters(s):
+    return re.sub(r'\x1b[^m]*m', '', s)
 
-    header      = "{:<20} | {:<7} | {:<10} | {:<20} | {:<11} | {:<8} | {:<12}"
-    row_format  = "{:<20} | {:<10} | {:<10} | {:<20} | {:<11} | {:<8} | {:<12}"
+async def send_table_as_code_block(ctx, table):
+    # Capture the output of the Rich table into a string
+    buffer = StringIO()
+    console = Console(file=buffer, force_terminal=True)
+    console.print(table)
 
-    # Print the header only once every X times
-    if heartbeat_counter % 24 == 0:
-        print(header.format("Heartbeat", "Ping", "Uptime", "Guild", "Total Users", "In Voice", "Daily Unique"))
+    # Get the contents of the string buffer and strip control characters
+    table_contents = buffer.getvalue()
+    stripped_contents = strip_control_characters(table_contents)
 
-    for i, guild in enumerate(bot.guilds, start=1):
+    # Send the stripped contents as a code block in a message
+    await ctx.send(f"```\n{stripped_contents}\n```")
+
+
+def generate_table() -> Table:
+    table = Table()
+    table.add_column("Uptime", justify="center")
+    # table.add_column(f"Heartbeat", justify="center")
+    table.add_column("Ping", justify="center")
+    table.add_column("Guild", justify="center")
+    table.add_column("Total Users", justify="center")
+    table.add_column("In Voice", justify="center")
+    table.add_column("Unique Today", justify="center")
+    uptime = datetime.now() - bot_start_time
+    uptime_str = str(uptime).split('.')[0]  # Remove microseconds
+    latency_ms = bot.latency * 1000  # Convert to milliseconds
+    # current_time = util.get_current_time()
+
+    for guild in bot.guilds:
         total_users = len(guild.members)
-        users_in_voice_chat = sum(1 for member in guild.members if member.voice)
-        unique_users_in_voice_chat = util.manage_voice_activity(guild.id, None, add_user=False)
-        latency_ms = bot.latency * 1000  # Convert to milliseconds
-        uptime = datetime.now() - bot_start_time
-        uptime_str = str(uptime).split('.')[0]  # Remove microseconds
-
-        current_time = util.get_current_time()
+        users_in_voice_chat = sum(
+            1 for member in guild.members if member.voice)
+        unique_users_in_voice_chat = util.manage_voice_activity(
+            guild.id, None, add_user=False)
 
         # Truncate the guild name to 17 characters
-        truncated_guild_name = guild.name[:16]
+        truncated_guild_name = guild.name[:20]
 
         # Set latency color based on the value
-        latency_color = "green" if latency_ms < 100 else ("yellow" if latency_ms <= 200 else "red")
-        if(latency_ms >= 1000):
-            latency_text = colored(f"{latency_ms:.0f}ms", latency_color)
-        elif(latency_ms >= 100):
-            latency_text = colored(f"{latency_ms:.1f}ms", latency_color)
+        latency_color = "green" if latency_ms < 100 else (
+            "yellow" if latency_ms <= 200 else "red")
+        if (latency_ms >= 1000):
+            latency_text = f"[{latency_color}]{latency_ms:.0f}ms[/{latency_color}]"
+        elif (latency_ms >= 100):
+            latency_text = f"[{latency_color}]{latency_ms:.1f}ms[/{latency_color}]"
         else:
-            latency_text = colored(f"{latency_ms:.2f}ms", latency_color)
-        
-        if(len(bot.guilds) > 1):
-            print(row_format.format(current_time, latency_text, uptime_str, f"[{i}] {truncated_guild_name}", total_users, users_in_voice_chat, len(unique_users_in_voice_chat)))
-        else:
-            print(row_format.format(current_time, latency_text, uptime_str, f"{truncated_guild_name}", total_users, users_in_voice_chat, len(unique_users_in_voice_chat)))
+            latency_text = f"[{latency_color}]{latency_ms:.2f}ms[/{latency_color}]"
 
-    # Increment the counter
-    heartbeat_counter += 1
+        table.add_row(
+            uptime_str,
+            # current_time,
+            latency_text,
+            f"{truncated_guild_name}",
+            str(total_users),
+            str(users_in_voice_chat),
+            str(len(unique_users_in_voice_chat))
+        )
+
+    return table
+
+
+async def live_heartbeat():
+    with Live(generate_table()) as live:
+        while True:
+            live.update(generate_table())
+            await asyncio.sleep(1)  # Adjust the update frequency as needed
 
 
 @tasks.loop(hours=24)
@@ -189,7 +221,8 @@ async def check_and_move_users():
             if moved_users_count > 0:
                 print(f"[{current_time}] [AutoMove] Moved {util.pluralize(moved_users_count, 'user', 'users')} from {source_channel.name} to {member_general_channel.name}")
             else:
-                print(f"[{current_time}] [AutoMove] No users to move from {source_channel.name} to {member_general_channel.name}")
+                print(
+                    f"[{current_time}] [AutoMove] No users to move from {source_channel.name} to {member_general_channel.name}")
 
 
 @tasks.loop(hours=24)
@@ -237,20 +270,22 @@ def get_initial_delay(target_time: time = None, interval: timedelta = None) -> f
     elif interval:
         # Schedule task at the next interval
         interval_seconds = interval.total_seconds()
-        elapsed_time = (now - now.replace(hour=0, minute=0, second=0, microsecond=0)).total_seconds()
-        next_run_seconds = math.ceil(elapsed_time / interval_seconds) * interval_seconds
-        next_run = now.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(seconds=next_run_seconds)
+        elapsed_time = (now - now.replace(hour=0, minute=0,
+                        second=0, microsecond=0)).total_seconds()
+        next_run_seconds = math.ceil(
+            elapsed_time / interval_seconds) * interval_seconds
+        next_run = now.replace(hour=0, minute=0, second=0,
+                               microsecond=0) + timedelta(seconds=next_run_seconds)
 
     return (next_run - now).total_seconds()
 
 
-
-@heartbeat_loop.before_loop
-async def before_heartbeat_loop():
-    heartbeat_proc()
-    initial_delay = get_initial_delay(interval=timedelta(minutes=30))
-    #print('Heartbeat loop scheduled for: {}'.format(initial_delay))
-    await asyncio.sleep(initial_delay)
+# @heartbeat_loop.before_loop
+# async def before_heartbeat_loop():
+#     heartbeat_proc()
+#     initial_delay = get_initial_delay(interval=timedelta(minutes=30))
+#     #print('Heartbeat loop scheduled for: {}'.format(initial_delay))
+#     await asyncio.sleep(initial_delay)
 
 
 @check_and_move_users.before_loop
@@ -420,6 +455,7 @@ async def on_voice_state_update(member, before, after):
             ]
             await util.send_embed(log_channel, title, description, color, None, fields)
 
+
 async def run_bot():
     while True:
         try:
@@ -434,7 +470,8 @@ async def run_bot():
                 print("Reconnect failed, restarting the bot...")
                 execv(sys.executable, ['python'] + sys.argv)
         except discord.errors.LoginFailure:
-            print("An improper token was provided. Please check your token and try again.")
+            print(
+                "An improper token was provided. Please check your token and try again.")
             execv(sys.executable, ['python'] + sys.argv)
         except KeyboardInterrupt:
             await bot.close()
