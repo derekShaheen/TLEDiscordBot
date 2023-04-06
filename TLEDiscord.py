@@ -114,6 +114,13 @@ async def on_guild_remove(guild):
     color = discord.Color.red()
     await util.send_developer_message(bot, title, description, color)
 
+
+@bot.command()
+async def exit(ctx):
+    if ctx.author.id == config.DEVELOPER_ID:
+        await ctx.send('Exiting...')
+        await bot.close()
+
 # Loop section
 
 
