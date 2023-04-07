@@ -261,7 +261,10 @@ def get_latest_commit_sha():
     if response.status_code == 200:
         commits = response.json()
         latest_commit = commits[0]
-        return latest_commit["sha"]
+        full_sha = latest_commit["sha"]
+        short_sha = full_sha[:7]
+
+        return short_sha
     else:
         print(f"Error: {response.status_code}")
         return None
