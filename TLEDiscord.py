@@ -80,7 +80,7 @@ async def on_ready():
     # Prepare the message content
     message_content = f'{bot.user} is now online and connected to the following servers:\n'
     for guild in bot.guilds:
-        message_content += f'     {guild.name} (id: {guild.id})\n'
+        message_content += f'{guild.name} (id: {guild.id})\n'
 
     title = f"Bot Online [{initial_run_sha}]"
     description = message_content
@@ -452,7 +452,7 @@ async def on_voice_state_update(member, before, after):
 
         if before.channel is None:
             user_join_times[user_id] = now
-            title = f'{member.name} joined a voice channel'
+            title = f'{member.display_name}#{member.discriminator} joined a voice channel'
             description = f'> {member.mention} joined `{after.channel.name}`'
             color = discord.Color.green()
             fields = [(f'Users in {after.channel.name}',
@@ -462,7 +462,7 @@ async def on_voice_state_update(member, before, after):
             duration = round(
                 (now - user_join_times.pop(user_id, now)).total_seconds())
             formatted_duration = util.format_duration(duration)
-            title = f'{member.name} left a voice channel'
+            title = f'{member.display_name}#{member.discriminator} left a voice channel'
             description = f'> {member.mention} left from `{before.channel.name}`'
             color = discord.Color.red()
             fields = [
@@ -476,7 +476,7 @@ async def on_voice_state_update(member, before, after):
                 (now - user_join_times.pop(user_id, now)).total_seconds())
             formatted_duration = util.format_duration(duration)
             user_join_times[user_id] = now
-            title = f'{member.name} switched voice channels'
+            title = f'{member.display_name}#{member.discriminator} switched voice channels'
             description = f'> {member.mention} moved from `{before.channel.name}` ➦ `{after.channel.name}`'
             color = discord.Color.blue()
             fields = [
