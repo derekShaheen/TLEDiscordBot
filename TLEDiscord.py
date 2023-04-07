@@ -441,6 +441,7 @@ async def on_voice_state_update(member, before, after):
             log_channel = await member.guild.create_text_channel(log_channel_name, overwrites=overwrites)
 
         user_id = member.id
+        avatar_url = str(member.avatar_url)
         now = util.get_current_time(False, True)
 
         if before.channel is None:
@@ -450,7 +451,7 @@ async def on_voice_state_update(member, before, after):
             color = discord.Color.green()
             fields = [(f'Users in {after.channel.name}',
                        util.user_list(after.channel))]
-            await util.send_embed(log_channel, title, description, color, None, fields)
+            await util.send_embed(log_channel, title, description, color, None, fields, None, thumbnail_url=avatar_url)
         elif after.channel is None:
             duration = round(
                 (now - user_join_times.pop(user_id, now)).total_seconds())
@@ -463,7 +464,7 @@ async def on_voice_state_update(member, before, after):
                 (f'Users in {before.channel.name}',
                  util.user_list(before.channel))
             ]
-            await util.send_embed(log_channel, title, description, color, None, fields)
+            await util.send_embed(log_channel, title, description, color, None, fields, None, thumbnail_url=avatar_url)
         else:
             duration = round(
                 (now - user_join_times.pop(user_id, now)).total_seconds())
@@ -480,7 +481,7 @@ async def on_voice_state_update(member, before, after):
                 (f'Users in {after.channel.name}',
                  util.user_list(after.channel))
             ]
-            await util.send_embed(log_channel, title, description, color, None, fields)
+            await util.send_embed(log_channel, title, description, color, None, fields, None, thumbnail_url=avatar_url)
 
 
 async def run_bot():

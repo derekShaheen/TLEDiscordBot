@@ -117,9 +117,13 @@ def save_config(guild_id, config):
         yaml.safe_dump(config, file)
 
 
-async def send_embed(recipient, title, description, color, url=None, fields=None, file=None):
+async def send_embed(recipient, title, description, color, url=None, fields=None, file=None, thumbnail_url=None):
     embed = discord.Embed(title=title, description=description, color=color, url=url)
     embed.timestamp = discord.utils.utcnow()
+
+    if thumbnail_url:
+        embed.set_thumbnail(url=thumbnail_url)
+
     if fields:
         for name, value in fields:
             embed.add_field(name=name, value=value, inline=False)
@@ -128,6 +132,7 @@ async def send_embed(recipient, title, description, color, url=None, fields=None
         await recipient.send(embed=embed, file=file)
     else:
         await recipient.send(embed=embed)
+
 
 
 
