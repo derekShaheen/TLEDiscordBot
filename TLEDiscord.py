@@ -80,7 +80,7 @@ async def on_ready():
     # Prepare the message content
     message_content = f'{bot.user} is now online and connected to the following servers:\n'
     for guild in bot.guilds:
-        message_content += f'\t{guild.name} (id: {guild.id})\n'
+        message_content += f'     {guild.name} (id: {guild.id})\n'
 
     title = f"Bot Online [{initial_run_sha}]"
     description = message_content
@@ -275,7 +275,7 @@ async def check_version():
 
     if not check_sha.startswith('Error') and initial_run_sha != check_sha:
         title = "Bot Updating..."
-        description = 'New bot version has been detected initiating the restart process...'
+        description = 'New bot version has been detected. Initiating the restart process...'
         color = discord.Color.blurple()
         await util.send_developer_message(bot, title, description, color)
         await bot.close()
