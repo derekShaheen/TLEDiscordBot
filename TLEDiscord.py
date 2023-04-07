@@ -25,6 +25,7 @@ import util
 install()
 heartbeat_counter = 0
 user_join_times = {}
+initial_run_sha = 0
 
 tle_prefix = '!'
 
@@ -43,6 +44,9 @@ bot_start_time = datetime.now() + timedelta(seconds=2)
 
 @bot.event
 async def on_ready():
+    global initial_run_sha
+    initial_run_sha = util.get_latest_commit_sha()
+
     print("----------------------")
     print("Logged in at: %s" % util.get_current_time())
     print("\tUsername: %s" % bot.user.name)
@@ -70,6 +74,7 @@ async def on_ready():
 
     daily_report.start()
     check_and_move_users.start()
+    check_version.start()
     heartbeat_loop.start()
 
     # Prepare the message content
@@ -77,7 +82,7 @@ async def on_ready():
     for guild in bot.guilds:
         message_content += f'\t{guild.name} (id: {guild.id})\n'
 
-    title = f"Bot Online [{util.get_latest_commit_sha()}]"
+    title = f"Bot Online [{initial_run_sha}]"
     description = message_content
     color = discord.Color.green()
     await util.send_developer_message(bot, title, description, color)
@@ -263,6 +268,17 @@ async def daily_report():
 
     util.populate_userlist(bot)
 
+@tasks.loop(minutes=5)
+async def check_version():
+    global initial_run_sha
+    check_sha = util.get_latest_commit_sha()
+    if initial_run_sha != check_sha:
+        title = "Bot Updating..."
+        description = 'New bot version has been detected initiating the restart process...'
+        color = discord.Color.gold()
+        await util.send_developer_message(bot, title, description, color)
+        await bot.close()
+
 # Before loop section
 
 
@@ -311,6 +327,12 @@ async def before_daily_report():
     target_time = time(hour=6, minute=00)
     initial_delay = get_initial_delay(target_time=target_time)
     print('Daily Report loop scheduled for:\t{}'.format(target_time))
+    await asyncio.sleep(initial_delay)
+
+@check_version.before_loop
+async def before_check_version():
+    initial_delay = get_initial_delay(interval=timedelta(minutes=5))
+    print('Version Check loop scheduled for: {}'.format(initial_delay))
     await asyncio.sleep(initial_delay)
 
 
@@ -478,11 +500,11 @@ async def run_bot():
                 await asyncio.wait_for(bot.wait_until_ready(), timeout=60)
             except asyncio.TimeoutError:
                 print("Reconnect failed, restarting the bot...")
-                execv(sys.executable, ['python'] + sys.argv)
+                await bot.close()
         except discord.errors.LoginFailure:
             print(
                 "An improper token was provided. Please check your token and try again.")
-            execv(sys.executable, ['python'] + sys.argv)
+            await bot.close()
         except KeyboardInterrupt:
             await bot.close()
             break
