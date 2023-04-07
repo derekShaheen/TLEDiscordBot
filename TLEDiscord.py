@@ -75,7 +75,7 @@ async def on_ready():
     daily_report.start()
     check_and_move_users.start()
     check_version.start()
-    heartbeat_loop.start()
+    #heartbeat_loop.start()
 
     # Prepare the message content
     message_content = f'{bot.user} is now online and connected to the following servers:\n'
@@ -132,10 +132,10 @@ async def exit(ctx):
 # Loop section
 
 
-@tasks.loop(seconds=1)
-async def heartbeat_loop():
-    # heartbeat_proc()
-    await live_heartbeat()
+# @tasks.loop(seconds=1)
+# async def heartbeat_loop():
+#     # heartbeat_proc()
+#     await live_heartbeat()
 
 @bot.command()
 async def heartbeat(ctx):
@@ -424,13 +424,6 @@ async def on_voice_state_update(member, before, after):
         util.manage_voice_activity(member.guild.id, member.id, add_user=True)
 
     # Track channel join/leave
-    # if before.channel != after.channel:
-        # if before.channel is not None:
-        #     await util.update_voice_activity(member.guild.id, before.channel.name, join=False)
-
-        # if after.channel is not None:
-        #     await util.update_voice_activity(member.guild.id, after.channel.name, join=True)
-
     if before.channel != after.channel:
         config = util.load_config(member.guild.id)
         if not config.get('logging_enabled', True):
