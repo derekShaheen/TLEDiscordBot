@@ -124,7 +124,7 @@ async def on_guild_remove(guild):
 async def exit(ctx):
     if ctx.author.id == config.DEVELOPER_ID:
         title = "Bot Exiting..."
-        description = 'Bot is exiting and initiating the restart process...'
+        description = 'Bot is exiting. Restart will be attempted...'
         color = discord.Color.red()
         await util.send_developer_message(bot, title, description, color)
         await bot.close()
