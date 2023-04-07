@@ -49,7 +49,7 @@ async def move(ctx, destination_name: str = None, source_name: str = None):
         return
 
     # Make sure the user has the required role
-    if not await has_required_role(ctx.author):
+    if not has_required_role(ctx.author):
         await ctx.send("You do not have the required role to use this command.")
         return
 
@@ -96,7 +96,7 @@ async def move(ctx, destination_name: str = None, source_name: str = None):
 )
 async def set_log_channel(ctx, log_channel_name: str = None):
     # Make sure the user has the required role
-    if not await has_required_role(ctx.author):
+    if not has_required_role(ctx.author):
         await ctx.send("You do not have the required role to use this command.")
         return
 
@@ -114,7 +114,7 @@ async def set_log_channel(ctx, log_channel_name: str = None):
 @commands.command(name='toggle_logging')
 async def toggle_logging(ctx):
     # Make sure the user has the required role
-    if not await has_required_role(ctx.author):
+    if not has_required_role(ctx.author):
         await ctx.send("You do not have the required role to use this command.")
         return
 

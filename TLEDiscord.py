@@ -73,7 +73,7 @@ async def on_ready():
     heartbeat_loop.start()
 
     # Prepare the message content
-    message_content = f'(156) {bot.user} is now online and connected to the following servers:\n'
+    message_content = f'(157) {bot.user} is now online and connected to the following servers:\n'
     for guild in bot.guilds:
         message_content += f'\t{guild.name} (id: {guild.id})\n'
 
