@@ -137,10 +137,9 @@ async def modify_allowed_roles(ctx, action: str, role_name: str):
     allowed_roles = config.get('allowed_roles', [])
 
     # If the user is not an administrator, check if they have an allowed role
-    if not ctx.author.guild_permissions.administrator:
-        if not has_required_role(ctx.author):
-            await ctx.send("You do not have the required role to use this command.")
-            return
+    if not has_required_role(ctx.author):
+        await ctx.send("You do not have the required role to use this command.")
+        return
 
     action = action.lower()
     if action == 'add':
@@ -165,40 +164,14 @@ async def modify_allowed_roles(ctx, action: str, role_name: str):
 
 @commands.command(name='view_allowed_roles')
 async def view_allowed_roles(ctx):
-    allowed_roles = util.load_config(ctx.guild.id).get('allowed_roles', [])
-
-    # If the user is not an administrator, check if they have an allowed role
+    # Check if they have an allowed role
     if not has_required_role(ctx.author):
         await ctx.send("You do not have the required role to use this command.")
         return
+    allowed_roles = util.load_config(ctx.guild.id).get('allowed_roles', [])
 
     if not allowed_roles:
         await ctx.send("No allowed roles have been set.")
     else:
         await ctx.send(f"Allowed roles: {', '.join(allowed_roles)}")
-
-@commands.command(name='channel_stats')
-async def voice_stats(ctx):
-    allowed_roles = util.load_config(ctx.guild.id).get('allowed_roles', [])
-
-    # If the user is not an administrator, check if they have an allowed role
-    if not has_required_role(ctx.author):
-        await ctx.send("You do not have the required role to use this command.")
-        return
-
-    file_path = f'guilds/{ctx.guild.id}/voice_activity.yaml'
-
-    if not path.exists(file_path):
-        await ctx.send("No voice activity data is available.")
-        return
-
-    with open(file_path, 'r') as file:
-        voice_activity = safe_load(file)
-
-    output = "Voice Channel Activity:\n\n"
-    for channel_name, stats in voice_activity.items():
-        output += f'{channel_name}:\n  Joins: {stats["joins"]}\n  Leaves: {stats["leaves"]}\n\n'
-
-    await ctx.send(output)
-
 

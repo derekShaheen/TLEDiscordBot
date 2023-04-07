@@ -255,7 +255,7 @@ async def daily_report():
     plot_image_file = util.generate_plot(bot.guilds)
 
     # Create the message embed
-    title = f"{current_time} Daily Report for All Guilds"
+    title = f"{current_time} Daily Report for {util.pluralize(len(bot.guilds), 'Guild', 'All Guilds')}"
     description = "Plot displays the number of unique users who joined a voice channel since yesterday by guild."
     color = discord.Color.green()
 
