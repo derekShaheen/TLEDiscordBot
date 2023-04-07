@@ -274,8 +274,8 @@ async def check_version():
     check_sha = util.get_latest_commit_sha()
 
     if not check_sha.startswith('Error') and initial_run_sha != check_sha:
-        title = "Bot Updating..."
-        description = 'New bot version has been detected. Initiating the restart process...'
+        title = "New bot version has been detected."
+        description = f'Initiating the update and restart process...\n[{initial_run_sha}] -> [{check_sha}]'
         color = discord.Color.blurple()
         await util.send_developer_message(bot, title, description, color)
         await bot.close()
