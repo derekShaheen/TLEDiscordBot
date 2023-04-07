@@ -272,12 +272,14 @@ async def daily_report():
 async def check_version():
     global initial_run_sha
     check_sha = util.get_latest_commit_sha()
-    if initial_run_sha != check_sha:
+
+    if not check_sha.startswith('Error') and initial_run_sha != check_sha:
         title = "Bot Updating..."
         description = 'New bot version has been detected initiating the restart process...'
-        color = discord.Color.gold()
+        color = discord.Color.blurple()
         await util.send_developer_message(bot, title, description, color)
         await bot.close()
+
 
 # Before loop section
 
