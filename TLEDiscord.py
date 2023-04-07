@@ -268,7 +268,7 @@ async def daily_report():
 
     util.populate_userlist(bot)
 
-@tasks.loop(minutes=5)
+@tasks.loop(seconds=30)
 async def check_version():
     global initial_run_sha
     check_sha = util.get_latest_commit_sha()
@@ -331,7 +331,7 @@ async def before_daily_report():
 
 @check_version.before_loop
 async def before_check_version():
-    initial_delay = get_initial_delay(interval=timedelta(minutes=5))
+    initial_delay = get_initial_delay(interval=timedelta(seconds=30))
     print('Version Check loop scheduled for: {}'.format(initial_delay))
     await asyncio.sleep(initial_delay)
 
