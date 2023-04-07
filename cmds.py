@@ -4,13 +4,14 @@ import util
 from yaml import safe_load
 from os import path
 
-def has_required_role(member, allowed_roles):
+def has_required_role(member):
     if member.guild is None:
         return False
     # Check if the member has the "Administrator" permission
     if any(role.permissions.administrator for role in member.roles):
         return True
 
+    allowed_roles = util.load_config(member.guild.id).get('allowed_roles', [])
     # Check if the member has any of the allowed roles
     return any(role.name in allowed_roles for role in member.roles)
 
@@ -48,7 +49,7 @@ async def move(ctx, destination_name: str = None, source_name: str = None):
         return
 
     # Make sure the user has the required role
-    if not await has_required_role(ctx):
+    if not await has_required_role(ctx.author):
         await ctx.send("You do not have the required role to use this command.")
         return
 
@@ -95,7 +96,7 @@ async def move(ctx, destination_name: str = None, source_name: str = None):
 )
 async def set_log_channel(ctx, log_channel_name: str = None):
     # Make sure the user has the required role
-    if not await has_required_role(ctx):
+    if not await has_required_role(ctx.author):
         await ctx.send("You do not have the required role to use this command.")
         return
 
@@ -113,7 +114,7 @@ async def set_log_channel(ctx, log_channel_name: str = None):
 @commands.command(name='toggle_logging')
 async def toggle_logging(ctx):
     # Make sure the user has the required role
-    if not await has_required_role(ctx):
+    if not await has_required_role(ctx.author):
         await ctx.send("You do not have the required role to use this command.")
         return
 
@@ -137,7 +138,7 @@ async def modify_allowed_roles(ctx, action: str, role_name: str):
 
     # If the user is not an administrator, check if they have an allowed role
     if not ctx.author.guild_permissions.administrator:
-        if not has_required_role(ctx.author, allowed_roles):
+        if not has_required_role(ctx.author):
             await ctx.send("You do not have the required role to use this command.")
             return
 
@@ -167,7 +168,7 @@ async def view_allowed_roles(ctx):
     allowed_roles = util.load_config(ctx.guild.id).get('allowed_roles', [])
 
     # If the user is not an administrator, check if they have an allowed role
-    if not has_required_role(ctx.author, allowed_roles):
+    if not has_required_role(ctx.author):
         await ctx.send("You do not have the required role to use this command.")
         return
 
@@ -181,7 +182,7 @@ async def voice_stats(ctx):
     allowed_roles = util.load_config(ctx.guild.id).get('allowed_roles', [])
 
     # If the user is not an administrator, check if they have an allowed role
-    if not has_required_role(ctx.author, allowed_roles):
+    if not has_required_role(ctx.author):
         await ctx.send("You do not have the required role to use this command.")
         return
 

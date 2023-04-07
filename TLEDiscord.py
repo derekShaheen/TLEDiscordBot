@@ -73,11 +73,11 @@ async def on_ready():
     heartbeat_loop.start()
 
     # Prepare the message content
-    message_content = f'{bot.user} is now online and connected to the following servers:\n'
+    message_content = f'(156) {bot.user} is now online and connected to the following servers:\n'
     for guild in bot.guilds:
         message_content += f'\t{guild.name} (id: {guild.id})\n'
 
-    title = "Bot Online - Chk 156242"
+    title = "Bot Online"
     description = message_content
     color = discord.Color.green()
     await util.send_developer_message(bot, title, description, color)
