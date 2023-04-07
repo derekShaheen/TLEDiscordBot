@@ -1,10 +1,11 @@
 #!/bin/bash
 
-while true; do
-  git reset --hard
-  git pull
-  echo "Starting the bot..."
-  python3 TLEDiscordBot.py
-  echo "The bot crashed, restarting in 5 seconds..."
-  sleep 5
-done
+cd /home/derek/TLEDiscordBot
+
+echo "Attempting to update..."
+sudo /usr/bin/git reset --hard
+sudo /usr/bin/git pull
+echo "Starting the bot..."
+python3 TLEDiscord.py
+echo "The bot crashed, restarting in 5 seconds..."
+sleep 5
