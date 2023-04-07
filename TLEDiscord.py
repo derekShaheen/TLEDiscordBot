@@ -77,7 +77,7 @@ async def on_ready():
     for guild in bot.guilds:
         message_content += f'\t{guild.name} (id: {guild.id})\n'
 
-    title = "Bot Online - Chk 156240"
+    title = "Bot Online - Chk 156241"
     description = message_content
     color = discord.Color.green()
     await util.send_developer_message(bot, title, description, color)
