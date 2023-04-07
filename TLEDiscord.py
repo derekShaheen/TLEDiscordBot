@@ -441,7 +441,7 @@ async def on_voice_state_update(member, before, after):
             log_channel = await member.guild.create_text_channel(log_channel_name, overwrites=overwrites)
 
         user_id = member.id
-        avatar_url = str(member.avatar_url)
+        avatar_url = str(member.avatar.url) if member.avatar else str(member.default_avatar.url)
         now = util.get_current_time(False, True)
 
         if before.channel is None:
