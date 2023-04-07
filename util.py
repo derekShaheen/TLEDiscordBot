@@ -12,7 +12,7 @@ import yaml
 from matplotlib.ticker import MaxNLocator
 
 # Local imports
-from config import DEVELOPER_ID, SERVER_TIMEZONE
+from config import DEVELOPER_ID, SERVER_TIMEZONE, GITHUB_TOKEN
 
 
 def pluralize(count, singular, plural):
@@ -256,7 +256,10 @@ def populate_userlist(bot):
                     
 def get_latest_commit_sha():
     url = f"https://api.github.com/repos/derekShaheen/TLEDiscordBot/commits"
-    response = requests.get(url)
+    headers = {
+    "Authorization": f"token {GITHUB_TOKEN}",
+}
+    response = requests.get(url, headers=headers)
 
     if response.status_code == 200:
         commits = response.json()

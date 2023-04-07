@@ -491,7 +491,7 @@ async def on_voice_state_update(member, before, after):
 async def run_bot():
     while True:
         try:
-            await bot.start(config.TOKEN)  # Replace TOKEN with your bot token
+            await bot.start(config.DISCORD_TOKEN)  # Replace TOKEN with your bot token
         except (discord.ConnectionClosed, discord.GatewayNotFound, discord.HTTPException) as exc:
             print(f"Connection error occurred: {exc}, trying to reconnect...")
 
