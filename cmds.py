@@ -1,8 +1,8 @@
 import discord
 from discord.ext import commands
+from os import path
 import util
 from yaml import safe_load
-from os import path
 
 def has_required_role(member):
     if member.guild is None:

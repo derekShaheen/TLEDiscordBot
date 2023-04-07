@@ -1,12 +1,17 @@
-import yaml
+# Standard library imports
 import os
+from datetime import datetime
+
+# Third-party library imports
 import discord
 import matplotlib.pyplot as plt
-from matplotlib.ticker import MaxNLocator
 import pandas as pd
-from datetime import datetime
 import pytz
-from datetime import time, timedelta
+import requests
+import yaml
+from matplotlib.ticker import MaxNLocator
+
+# Local imports
 from config import DEVELOPER_ID, SERVER_TIMEZONE
 
 
@@ -248,3 +253,15 @@ def populate_userlist(bot):
                 for member in channel.members:
                     manage_voice_activity(
                         guild.id, member.id, add_user=True)
+                    
+def get_latest_commit_sha():
+    url = f"https://api.github.com/repos/derekShaheen/TLEDiscordBot/commits"
+    response = requests.get(url)
+
+    if response.status_code == 200:
+        commits = response.json()
+        latest_commit = commits[0]
+        return latest_commit["sha"]
+    else:
+        print(f"Error: {response.status_code}")
+        return None

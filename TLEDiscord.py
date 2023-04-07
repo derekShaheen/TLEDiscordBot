@@ -73,11 +73,11 @@ async def on_ready():
     heartbeat_loop.start()
 
     # Prepare the message content
-    message_content = f'(157) {bot.user} is now online and connected to the following servers:\n'
+    message_content = f'{bot.user} is now online and connected to the following servers:\n'
     for guild in bot.guilds:
         message_content += f'\t{guild.name} (id: {guild.id})\n'
 
-    title = "Bot Online"
+    title = f"Bot Online [{util.get_latest_commit_sha()}]"
     description = message_content
     color = discord.Color.green()
     await util.send_developer_message(bot, title, description, color)
@@ -118,7 +118,10 @@ async def on_guild_remove(guild):
 @bot.command()
 async def exit(ctx):
     if ctx.author.id == config.DEVELOPER_ID:
-        await ctx.send('Exiting...')
+        title = "Bot Exiting..."
+        description = 'Bot is exiting and initiating the restart process...'
+        color = discord.Color.red()
+        await util.send_developer_message(bot, title, description, color)
         await bot.close()
 
 # Loop section
