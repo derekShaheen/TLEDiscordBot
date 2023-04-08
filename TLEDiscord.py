@@ -243,21 +243,20 @@ async def check_and_move_users():
 @tasks.loop(hours=24)
 async def daily_report():
     config = util.load_config('262726474967023619') # Hardcoding for TLE
-
+    current_time = util.get_current_time(False)
     # Create the message embed
     title = f"{current_time} Daily Report for {util.pluralize(len(bot.guilds), 'Guild', 'All Guilds')}"
-    description = "Plot displays the number of unique users who joined a voice channel since yesterday by guild."
-    color = discord.Color.green()
+    description = "Plot displays the number of unique users who joined a voice channel since the prior day by guild."
+    color = discord.Color.magenta()
 
     # Update the voice activity data
     for guild in bot.guilds:
         userlist = util.manage_voice_activity(guild.id, None, add_user=False)
-        current_time = util.get_current_time(False)
         unique_users = len(userlist)
 
         # Save the daily report data to a file
-        #util.save_daily_report(guild.id, current_time, unique_users)
-        if (guild.id == '262726474967023619') and config.get('logging_enabled', True): # Hardcoding for TLE
+        util.save_daily_report(guild.id, current_time, unique_users)
+        if (guild.id == 262726474967023619) and config.get('logging_enabled', True) == True: # Hardcoding for TLE
             log_channel_name = config['log_channel_name']
             log_channel = discord.utils.get(
                 guild.text_channels, name=log_channel_name)
@@ -269,7 +268,7 @@ async def daily_report():
                 }
                 log_channel = await guild.create_text_channel(log_channel_name, overwrites=overwrites)
 
-            plot_image_file = util.generate_plot(guild)
+            plot_image_file = util.generate_plot(bot.guilds)
             with open(plot_image_file, 'rb') as file:
                 await util.send_embed(log_channel, title, description, color, None, None, file=discord.File(file))
 
@@ -282,8 +281,8 @@ async def daily_report():
             await util.send_developer_message(bot, title, description, color, file=discord.File(file))
         
 
-    #for guild in bot.guilds:
-        #util.clear_voice_activity(guild.id)
+    for guild in bot.guilds:
+        util.clear_voice_activity(guild.id)
 
     util.populate_userlist(bot)
 
@@ -345,7 +344,7 @@ async def before_check_and_move_users():
 
 @daily_report.before_loop
 async def before_daily_report():
-    target_time = time(hour=19, minute=15)
+    target_time = time(hour=19, minute=36)
     initial_delay = get_initial_delay(target_time=target_time)
     print('Daily Report loop scheduled for:\t{}'.format(target_time))
     await asyncio.sleep(initial_delay)
