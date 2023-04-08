@@ -256,7 +256,7 @@ async def daily_report():
         unique_users = len(userlist)
 
         # Save the daily report data to a file
-        util.save_daily_report(guild.id, current_time, unique_users)
+        #util.save_daily_report(guild.id, current_time, unique_users)
         if (guild.id == '262726474967023619') and config.get('logging_enabled', True): # Hardcoding for TLE
             log_channel_name = config['log_channel_name']
             log_channel = discord.utils.get(
