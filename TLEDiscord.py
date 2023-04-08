@@ -344,7 +344,7 @@ async def before_check_and_move_users():
 
 @daily_report.before_loop
 async def before_daily_report():
-    target_time = time(hour=6, minute=00)
+    target_time = time(hour=11, minute=8)
     initial_delay = get_initial_delay(target_time=target_time)
     print('Daily Report loop scheduled for:\t{}'.format(target_time))
     await asyncio.sleep(initial_delay)
