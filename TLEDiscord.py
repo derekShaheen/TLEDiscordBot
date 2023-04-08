@@ -242,6 +242,13 @@ async def check_and_move_users():
 
 @tasks.loop(hours=24)
 async def daily_report():
+    config = util.load_config('262726474967023619') # Hardcoding for TLE
+
+    # Create the message embed
+    title = f"{current_time} Daily Report for {util.pluralize(len(bot.guilds), 'Guild', 'All Guilds')}"
+    description = "Plot displays the number of unique users who joined a voice channel since yesterday by guild."
+    color = discord.Color.green()
+
     # Update the voice activity data
     for guild in bot.guilds:
         userlist = util.manage_voice_activity(guild.id, None, add_user=False)
@@ -250,18 +257,30 @@ async def daily_report():
 
         # Save the daily report data to a file
         util.save_daily_report(guild.id, current_time, unique_users)
+        if (guild.id == '262726474967023619') and config.get('logging_enabled', True): # Hardcoding for TLE
+            log_channel_name = config['log_channel_name']
+            log_channel = discord.utils.get(
+                guild.text_channels, name=log_channel_name)
 
-    # Generate the plot and get the image file path
-    plot_image_file = util.generate_plot(bot.guilds)
+            if not log_channel:
+                overwrites = {
+                    guild.default_role: discord.PermissionOverwrite(
+                        read_messages=False)
+                }
+                log_channel = await guild.create_text_channel(log_channel_name, overwrites=overwrites)
 
-    # Create the message embed
-    title = f"{current_time} Daily Report for {util.pluralize(len(bot.guilds), 'Guild', 'All Guilds')}"
-    description = "Plot displays the number of unique users who joined a voice channel since yesterday by guild."
-    color = discord.Color.green()
+            plot_image_file = util.generate_plot(guild)
+            with open(plot_image_file, 'rb') as file:
+                await util.send_embed(log_channel, title, description, color, None, None, file=discord.File(file))
 
-    # Send the embed with the image to the developer
-    with open(plot_image_file, 'rb') as file:
-        await util.send_developer_message(bot, title, description, color, file=discord.File(file))
+    if not config.get('logging_enabled', True) or len(bot.guilds) > 1:
+        # Generate the plot and get the image file path
+        plot_image_file = util.generate_plot(bot.guilds)
+
+        # Send the embed with the image to the developer
+        with open(plot_image_file, 'rb') as file:
+            await util.send_developer_message(bot, title, description, color, file=discord.File(file))
+        
 
     for guild in bot.guilds:
         util.clear_voice_activity(guild.id)
