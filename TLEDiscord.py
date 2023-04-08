@@ -336,7 +336,7 @@ def get_initial_delay(target_time: time = None, interval: timedelta = None) -> f
 
 @check_and_move_users.before_loop
 async def before_check_and_move_users():
-    target_time = time(hour=18, minute=0)
+    target_time = time(hour=18, minute=00)
     initial_delay = get_initial_delay(target_time=target_time)
     print('First Check/Move scheduled for: \t{}'.format(target_time))
     await asyncio.sleep(initial_delay)
@@ -344,7 +344,7 @@ async def before_check_and_move_users():
 
 @daily_report.before_loop
 async def before_daily_report():
-    target_time = time(hour=11, minute=10)
+    target_time = time(hour=6, minute=00)
     initial_delay = get_initial_delay(target_time=target_time)
     print('Daily Report loop scheduled for:\t{}'.format(target_time))
     await asyncio.sleep(initial_delay)
