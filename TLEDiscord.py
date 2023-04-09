@@ -528,7 +528,7 @@ async def on_voice_state_update(member, before, after):
             formatted_duration = util.format_duration(duration)
             user_join_times[user_id] = now
             title = f'{member.display_name}#{member.discriminator} switched voice channels'
-            description = f'> {member.mention} moved from `{before.channel.category}.{before.channel.name}` ➦ `{after.channel.category}.{after.channel.name}`'
+            description = f'> {member.mention} moved from \n`{before.channel.category}.{before.channel.name}` ➦ `{after.channel.category}.{after.channel.name}`'
             color = discord.Color.blue()
             fields = [
                 (f'Duration in {before.channel.name}',
