@@ -26,6 +26,7 @@ install()
 heartbeat_counter = 0
 user_join_times = {}
 initial_run_sha = 0
+max_auto_channels = 9
 
 tle_prefix = '!'
 
@@ -470,7 +471,7 @@ async def on_voice_state_update(member, before, after):
                     if next_game_room_number is None:
                         next_game_room_number = int(game_rooms[-1].name.split()[-1]) + 1
 
-                    if len(game_rooms[-1].members) > 0 and len(game_rooms[0].members) > 0:
+                    if len(game_rooms[-1].members) > 0 and len(game_rooms[0].members) > 0 and len(game_rooms) < max_auto_channels:
                         await util.create_game_room(member.guild, game_room_category, f"{next_game_room_number}")
 
 
