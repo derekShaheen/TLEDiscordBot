@@ -79,6 +79,14 @@ async def find_user_guild(client, user_id: int):
     return associated_guilds
 
 
+async def create_game_room(guild, category, name):
+    return await guild.create_voice_channel("Game Room " + name, category=category)
+
+
+def is_game_room_channel(channel, category_name):
+    return channel.name.startswith("Game Room ") and channel.category and channel.category.name == category_name
+
+
 def format_duration(seconds):
     hours, remainder = divmod(seconds, 3600)
     minutes, seconds = divmod(remainder, 60)
@@ -118,7 +126,8 @@ def save_config(guild_id, config):
 
 
 async def send_embed(recipient, title, description, color, url=None, fields=None, file=None, thumbnail_url=None):
-    embed = discord.Embed(title=title, description=description, color=color, url=url)
+    embed = discord.Embed(
+        title=title, description=description, color=color, url=url)
     embed.timestamp = discord.utils.utcnow()
 
     if thumbnail_url:
@@ -132,8 +141,6 @@ async def send_embed(recipient, title, description, color, url=None, fields=None
         await recipient.send(embed=embed, file=file)
     else:
         await recipient.send(embed=embed)
-
-
 
 
 def manage_voice_activity(guild_id: int, user_id: int = None, add_user: bool = False):
@@ -197,6 +204,7 @@ async def send_developer_message(client, title, description, color, file=None, f
     else:
         await send_embed(developer, title, description, color, None, fields)
 
+
 def save_daily_report(guild_id: int, current_time: datetime, unique_users: int):
     daily_report_file = f'guilds/{guild_id}/daily_report_data.csv'
 
@@ -207,6 +215,7 @@ def save_daily_report(guild_id: int, current_time: datetime, unique_users: int):
     report_data = f'{current_time},{unique_users}\n'
     with open(daily_report_file, 'a') as file:
         file.write(report_data)
+
 
 def generate_plot(guilds: list):
     plot_image_file = f'daily_report_plot.png'
@@ -220,7 +229,8 @@ def generate_plot(guilds: list):
         daily_report_file = f'guilds/{guild_id}/daily_report_data.csv'
 
         # Read the daily report data and create a DataFrame
-        data = pd.read_csv(daily_report_file, names=['date', 'unique_users'], parse_dates=['date'])
+        data = pd.read_csv(daily_report_file, names=[
+                           'date', 'unique_users'], parse_dates=['date'])
 
         # Generate the plot for the current guild
         plt.plot(data['date'], data['unique_users'], label=f'{guild_name}')
@@ -242,6 +252,8 @@ def generate_plot(guilds: list):
     return plot_image_file
 
 # Get the current time with config.SERVER_TIMEZONE
+
+
 def get_current_time(show_time=True, no_format=False):
     if no_format:
         return datetime.now(pytz.timezone(SERVER_TIMEZONE))
@@ -250,7 +262,8 @@ def get_current_time(show_time=True, no_format=False):
             return datetime.now(pytz.timezone(SERVER_TIMEZONE)).strftime('%Y-%m-%d %H:%M:%S')
         else:
             return datetime.now(pytz.timezone(SERVER_TIMEZONE)).strftime('%Y-%m-%d')
-        
+
+
 def populate_userlist(bot):
     for guild in bot.guilds:
         for channel in guild.channels:
@@ -258,12 +271,13 @@ def populate_userlist(bot):
                 for member in channel.members:
                     manage_voice_activity(
                         guild.id, member.id, add_user=True)
-                    
+
+
 def get_latest_commit_sha():
     url = f"https://api.github.com/repos/derekShaheen/TLEDiscordBot/commits"
     headers = {
-    "Authorization": f"token {GITHUB_TOKEN}",
-}
+        "Authorization": f"token {GITHUB_TOKEN}",
+    }
     response = requests.get(url, headers=headers)
 
     if response.status_code == 200:

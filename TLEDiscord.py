@@ -406,15 +406,15 @@ async def on_member_update(before, after):
         await log_event(after.guild, config['log_channel_name'], f'{after.display_name} changed their nickname', f'Before: {before.nick}\nAfter: {after.nick}', discord.Color.blue())
 
 
-@bot.event
-async def on_message_delete(message):
-    await log_event(message.guild, config['log_channel_name'], f'{message.author.display_name} deleted a message', message.content, discord.Color.red(), timestamp=message.created_at)
+# @bot.event
+# async def on_message_delete(message):
+#     await log_event(message.guild, config['log_channel_name'], f'{message.author.display_name} deleted a message', message.content, discord.Color.red(), timestamp=message.created_at)
 
 
-@bot.event
-async def on_message_edit(before, after):
-    if before.content != after.content:
-        await log_event(after.guild, config['log_channel_name'], f'{after.author.display_name} edited a message', f'Before: {before.content}\nAfter: {after.content}', discord.Color.blue(), timestamp=after.edited_at)
+# @bot.event
+# async def on_message_edit(before, after):
+#     if before.content != after.content:
+#         await log_event(after.guild, config['log_channel_name'], f'{after.author.display_name} edited a message', f'Before: {before.content}\nAfter: {after.content}', discord.Color.blue(), timestamp=after.edited_at)
 
 # @bot.event
 # async def on_message(message):
@@ -437,6 +437,45 @@ async def on_message_edit(before, after):
 
 @bot.event
 async def on_voice_state_update(member, before, after):
+    # Handle Game Room voice channel creation / deletion
+    categories_to_monitor = ["Member Game Rooms", "Public Game Rooms"]
+
+    if before.channel != after.channel:
+        for category_name in categories_to_monitor:
+            game_room_category = discord.utils.get(member.guild.categories, name=category_name)
+
+            if game_room_category:
+                if (before.channel and before.channel.category == game_room_category) or (after.channel and after.channel.category == game_room_category):
+                    game_rooms = sorted([channel for channel in member.guild.voice_channels if util.is_game_room_channel(channel, category_name)],
+                                        key=lambda x: int(x.name.split()[-1]))
+
+                    # Delete empty game rooms except Game Room 1
+                    for i, game_room in enumerate(game_rooms):
+                        if i != 0 and len(game_room.members) == 0:
+                            await game_room.delete()
+
+                    # Refresh the list of game rooms
+                    game_rooms = sorted([channel for channel in member.guild.voice_channels if util.is_game_room_channel(channel, category_name)],
+                                        key=lambda x: int(x.name.split()[-1]))
+
+                    # Create the next available integer Game Room if needed
+                    next_game_room_number = None
+                    for i, game_room in enumerate(game_rooms):
+                        game_room_number = i + 1
+
+                        if game_room_number != int(game_room.name.split()[-1]):
+                            next_game_room_number = game_room_number
+                            break
+
+                    if next_game_room_number is None:
+                        next_game_room_number = int(game_rooms[-1].name.split()[-1]) + 1
+
+                    if len(game_rooms[-1].members) > 0 and len(game_rooms[0].members) > 0:
+                        await util.create_game_room(member.guild, game_room_category, f"{next_game_room_number}")
+
+
+    # ====================================================================================================
+
     # Store the user ID in joined_users set when they join a voice channel
     if before.channel is None and after.channel is not None:
         util.manage_voice_activity(member.guild.id, member.id, add_user=True)
