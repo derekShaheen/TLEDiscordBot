@@ -101,7 +101,7 @@ def user_list(channel):
 
 def load_config(guild_id):
     config_path = f'guilds/{guild_id}/config.yml'
-    default_config = {'log_channel_name': 'voice_logs',
+    default_config = {'log_channel_name': 'server_logs',
                       'logging_enabled': False}
 
     if os.path.exists(config_path):

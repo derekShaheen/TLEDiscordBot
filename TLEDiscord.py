@@ -504,7 +504,7 @@ async def on_voice_state_update(member, before, after):
         if before.channel is None:
             user_join_times[user_id] = now
             title = f'{member.display_name}#{member.discriminator} joined a voice channel'
-            description = f'> {member.mention} joined `{after.channel.name}`'
+            description = f'> {member.mention} joined `{after.channel.category}.{after.channel.name}`'
             color = discord.Color.green()
             fields = [(f'Users in {after.channel.name}',
                        util.user_list(after.channel))]
@@ -514,7 +514,7 @@ async def on_voice_state_update(member, before, after):
                 (now - user_join_times.pop(user_id, now)).total_seconds())
             formatted_duration = util.format_duration(duration)
             title = f'{member.display_name}#{member.discriminator} left a voice channel'
-            description = f'> {member.mention} left from `{before.channel.name}`'
+            description = f'> {member.mention} left from `{before.channel.category}.{before.channel.name}`'
             color = discord.Color.red()
             fields = [
                 (f'Duration', f'{formatted_duration}'),
@@ -528,7 +528,7 @@ async def on_voice_state_update(member, before, after):
             formatted_duration = util.format_duration(duration)
             user_join_times[user_id] = now
             title = f'{member.display_name}#{member.discriminator} switched voice channels'
-            description = f'> {member.mention} moved from `{before.channel.name}` ➦ `{after.channel.name}`'
+            description = f'> {member.mention} moved from `{before.channel.category}.{before.channel.name}` ➦ `{after.channel.category}.{after.channel.name}`'
             color = discord.Color.blue()
             fields = [
                 (f'Duration in {before.channel.name}',
