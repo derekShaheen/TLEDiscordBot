@@ -36,8 +36,7 @@ bot = commands.Bot(command_prefix=tle_prefix, intents=intents, reconnect=True)
 bot.add_command(cmds.move)
 bot.add_command(cmds.set_log_channel)
 bot.add_command(cmds.toggle_logging)
-bot.add_command(cmds.modify_allowed_roles)
-bot.add_command(cmds.view_allowed_roles)
+bot.add_command(cmds.allowed_roles)
 bot_start_time = datetime.now() + timedelta(seconds=2)
 
 # Initialize the bot

@@ -130,48 +130,36 @@ async def toggle_logging(ctx):
         await ctx.send("Logging has been enabled.")
 
 
-@commands.command(name='modify_allowed_roles')
-async def modify_allowed_roles(ctx, action: str, role_name: str):
-    # Load the allowed_roles list from the config
-    config = util.load_config(ctx.guild.id)
-    allowed_roles = config.get('allowed_roles', [])
-
-    # If the user is not an administrator, check if they have an allowed role
+@commands.command(name='allowed_roles')
+async def allowed_roles(ctx, action: str = "show", role_name: str = None):
+    # Check if they have an allowed role
     if not has_required_role(ctx.author):
         await ctx.send("You do not have the required role to use this command.")
         return
+    
+    config = util.load_config(ctx.guild.id)
+    allowed_roles = config.get('allowed_roles', [])
 
-    action = action.lower()
-    if action == 'add':
+    if action.lower() == "show" or role_name is None:
+        if not allowed_roles:
+            await ctx.send("No allowed roles have been set.")
+        else:
+            await ctx.send(f"Allowed roles: {', '.join(allowed_roles)}")
+    elif action.lower() == "add" and role_name:
         if role_name not in allowed_roles:
             allowed_roles.append(role_name)
             await ctx.send(f'Successfully added "{role_name}" to the allowed roles list.')
         else:
             await ctx.send(f'Role "{role_name}" is already in the allowed roles list.')
-    elif action == 'remove':
+    elif action.lower() == "remove" and role_name:
         if role_name in allowed_roles:
             allowed_roles.remove(role_name)
             await ctx.send(f'Successfully removed "{role_name}" from the allowed roles list.')
         else:
             await ctx.send(f'Role "{role_name}" is not in the allowed roles list.')
     else:
-        await ctx.send('Invalid action. Please use "add" or "remove".')
+        await ctx.send('Invalid action. Please use "show", "add", or "remove".')
 
     # Save the updated allowed_roles list to the config
     config['allowed_roles'] = allowed_roles
     util.save_config(ctx.guild.id, config)
-
-
-@commands.command(name='view_allowed_roles')
-async def view_allowed_roles(ctx):
-    # Check if they have an allowed role
-    if not has_required_role(ctx.author):
-        await ctx.send("You do not have the required role to use this command.")
-        return
-    allowed_roles = util.load_config(ctx.guild.id).get('allowed_roles', [])
-
-    if not allowed_roles:
-        await ctx.send("No allowed roles have been set.")
-    else:
-        await ctx.send(f"Allowed roles: {', '.join(allowed_roles)}")
-
