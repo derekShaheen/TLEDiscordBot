@@ -268,9 +268,19 @@ async def daily_report():
                 }
                 log_channel = await guild.create_text_channel(log_channel_name, overwrites=overwrites)
 
+            # Find or create the "Daily Reports" thread under the log_channel
+            daily_reports_thread = None
+            for thread in await log_channel.threads():
+                if thread.name == "Daily Reports":
+                    daily_reports_thread = thread
+                    break
+
+            if not daily_reports_thread:
+                daily_reports_thread = await log_channel.create_thread(name="Daily Reports")
+
             plot_image_file = util.generate_plot(bot.guilds)
             with open(plot_image_file, 'rb') as file:
-                await util.send_embed(log_channel, title, description, color, None, None, file=discord.File(file))
+                await util.send_embed(daily_reports_thread, title, description, color, None, None, file=discord.File(file))
 
     if not config.get('logging_enabled', True) or len(bot.guilds) > 1:
         # Generate the plot and get the image file path
