@@ -85,7 +85,7 @@ async def on_ready():
     title = f"Bot Online [{initial_run_sha}]"
     description = message_content
     color = discord.Color.green()
-    await util.send_developer_message(bot, title, description, color)
+    #await util.send_developer_message(bot, title, description, color)
 
     # print("Ready...")
 
@@ -269,14 +269,11 @@ async def daily_report():
                 log_channel = await guild.create_text_channel(log_channel_name, overwrites=overwrites)
 
             # Find or create the "Daily Reports" thread under the log_channel
-            daily_reports_thread = None
-            for thread in await log_channel.threads():
-                if thread.name == "Daily Reports":
-                    daily_reports_thread = thread
-                    break
+            daily_reports_thread = discord.utils.get(
+                log_channel.threads, name="Daily Reports")
 
             if not daily_reports_thread:
-                daily_reports_thread = await log_channel.create_thread(name="Daily Reports")
+                daily_reports_thread = await log_channel.create_thread(name="Daily Reports", type=discord.ChannelType.public_thread, auto_archive_duration=10080)
 
             plot_image_file = util.generate_plot(bot.guilds)
             with open(plot_image_file, 'rb') as file:
