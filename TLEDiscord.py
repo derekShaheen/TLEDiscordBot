@@ -85,7 +85,7 @@ async def on_ready():
     title = f"Bot Online [{initial_run_sha}]"
     description = message_content
     color = discord.Color.green()
-    #await util.send_developer_message(bot, title, description, color)
+    await util.send_developer_message(bot, title, description, color)
 
     # print("Ready...")
 
