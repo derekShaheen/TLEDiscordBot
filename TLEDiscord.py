@@ -452,7 +452,9 @@ async def on_voice_state_update(member, before, after):
             game_room_category = discord.utils.get(member.guild.categories, name=category_name)
 
             if game_room_category:
+                # Check if the user has joined or left a channel in the specified category
                 if (before.channel and before.channel.category == game_room_category) or (after.channel and after.channel.category == game_room_category):
+                    # Retrieve and sort the game rooms in the category
                     game_rooms = sorted([channel for channel in member.guild.voice_channels if util.is_game_room_channel(channel, category_name)],
                                         key=lambda x: int(x.name.split()[-1]))
 
@@ -465,7 +467,7 @@ async def on_voice_state_update(member, before, after):
                     game_rooms = sorted([channel for channel in member.guild.voice_channels if util.is_game_room_channel(channel, category_name)],
                                         key=lambda x: int(x.name.split()[-1]))
 
-                    # Create the next available integer Game Room if needed
+                    # Determine the next available integer for Game Room
                     next_game_room_number = None
                     for i, game_room in enumerate(game_rooms):
                         game_room_number = i + 1
@@ -474,12 +476,13 @@ async def on_voice_state_update(member, before, after):
                             next_game_room_number = game_room_number
                             break
 
+                    # Assign the next available integer if not found
                     if next_game_room_number is None:
                         next_game_room_number = int(game_rooms[-1].name.split()[-1]) + 1
 
+                    # Create the next Game Room if needed
                     if len(game_rooms[-1].members) > 0 and len(game_rooms[0].members) > 0 and len(game_rooms) < max_auto_channels:
                         await util.create_game_room(member.guild, game_room_category, f"{next_game_room_number}")
-
 
     # ====================================================================================================
 
@@ -490,6 +493,8 @@ async def on_voice_state_update(member, before, after):
     # Track channel join/leave
     if before.channel != after.channel:
         config = util.load_config(member.guild.id)
+        
+        # Check if logging is enabled
         if not config.get('logging_enabled', True):
             return
 
@@ -497,6 +502,7 @@ async def on_voice_state_update(member, before, after):
         log_channel = discord.utils.get(
             member.guild.text_channels, name=log_channel_name)
 
+        # Create the log channel if it doesn't exist
         if not log_channel:
             overwrites = {
                 member.guild.default_role: discord.PermissionOverwrite(
@@ -508,14 +514,16 @@ async def on_voice_state_update(member, before, after):
         avatar_url = str(member.avatar.url) if member.avatar else str(member.default_avatar.url)
         now = util.get_current_time(False, True)
 
+        # If the user joined a voice channel
         if before.channel is None:
             user_join_times[user_id] = now
             title = f'{member.display_name}#{member.discriminator} joined a voice channel'
             description = f'> {member.mention} joined `{after.channel.category}.{after.channel.name}`'
             color = discord.Color.green()
             fields = [(f'Users in {after.channel.name}',
-                       util.user_list(after.channel))]
+                    util.user_list(after.channel))]
             await util.send_embed(log_channel, title, description, color, None, fields, None, thumbnail_url=avatar_url)
+        # If the user left a voice channel
         elif after.channel is None:
             duration = round(
                 (now - user_join_times.pop(user_id, now)).total_seconds())
@@ -526,9 +534,10 @@ async def on_voice_state_update(member, before, after):
             fields = [
                 (f'Duration', f'{formatted_duration}'),
                 (f'Users in {before.channel.name}',
-                 util.user_list(before.channel))
+                util.user_list(before.channel))
             ]
             await util.send_embed(log_channel, title, description, color, None, fields, None, thumbnail_url=avatar_url)
+        # If the user switched voice channels
         else:
             duration = round(
                 (now - user_join_times.pop(user_id, now)).total_seconds())
@@ -539,13 +548,14 @@ async def on_voice_state_update(member, before, after):
             color = discord.Color.blue()
             fields = [
                 (f'Duration in {before.channel.name}',
-                 f'{formatted_duration}'),
+                f'{formatted_duration}'),
                 (f'Users in {before.channel.name}',
-                 util.user_list(before.channel)),
+                util.user_list(before.channel)),
                 (f'Users in {after.channel.name}',
-                 util.user_list(after.channel))
+                util.user_list(after.channel))
             ]
             await util.send_embed(log_channel, title, description, color, None, fields, None, thumbnail_url=avatar_url)
+
 
 
 async def run_bot():
