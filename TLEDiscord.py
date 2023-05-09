@@ -75,6 +75,7 @@ async def on_ready():
     daily_report.start()
     check_and_move_users.start()
     check_version.start()
+    restart_bot_loop.start()
     #heartbeat_loop.start()
 
     # Prepare the message content
@@ -305,6 +306,16 @@ async def check_version():
         await util.send_developer_message(bot, title, description, color)
         await bot.close()
 
+@tasks.loop(hours=24)
+async def restart_bot_loop():
+    now = datetime.datetime.now()
+    weekday = now.weekday()  # Monday is 0 and Sunday is 6
+    hour = now.hour
+
+    # Schedule the bot to restart at 0400 on Tuesday (weekday 1)
+    if weekday == 1 and hour == 4:
+        print("Restarting bot...")
+        await bot.close()
 
 # Before loop section
 
@@ -360,6 +371,13 @@ async def before_daily_report():
 async def before_check_version():
     initial_delay = get_initial_delay(interval=timedelta(seconds=30))
     print('Version Check loop scheduled for: {}'.format(initial_delay))
+    await asyncio.sleep(initial_delay)
+
+@restart_bot_loop.before_loop
+async def before_restart_bot():
+    target_time = time(hour=4, minute=1)
+    initial_delay = get_initial_delay(target_time=target_time)
+    print('Restart bot loop scheduled for: {}'.format(initial_delay))
     await asyncio.sleep(initial_delay)
 
 
