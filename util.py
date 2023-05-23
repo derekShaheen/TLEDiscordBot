@@ -124,6 +124,28 @@ def save_config(guild_id, config):
     with open(config_path, 'w') as file:
         yaml.safe_dump(config, file)
 
+def store_last_seen(guild_id, user_id):
+    seen_path = f'guilds/{guild_id}/users_seen.yml'
+    if os.path.exists(seen_path):
+        with open(seen_path, 'r') as file:
+            seen_data = yaml.safe_load(file)
+    else:
+        seen_data = {}
+
+    seen_data[user_id] = str(datetime.datetime.now())
+    
+    with open(seen_path, 'w') as file:
+        yaml.safe_dump(seen_data, file)
+
+def load_last_seen(guild_id, user_id):
+    seen_path = f'guilds/{guild_id}/users_seen.yml'
+    if os.path.exists(seen_path):
+        with open(seen_path, 'r') as file:
+            seen_data = yaml.safe_load(file)
+            if user_id in seen_data:
+                return seen_data[user_id]
+    
+    return "Never"
 
 async def send_embed(recipient, title, description, color, url=None, fields=None, file=None, thumbnail_url=None):
     embed = discord.Embed(

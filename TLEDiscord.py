@@ -310,7 +310,6 @@ async def check_version():
 async def restart_bot_loop():
     now = datetime.datetime.now()
     weekday = now.weekday()  # Monday is 0 and Sunday is 6
-    hour = now.hour
 
     # Schedule the bot to restart at 0400 on Tuesday (weekday 1)
     if weekday == 1:
@@ -507,6 +506,7 @@ async def on_voice_state_update(member, before, after):
     # Store the user ID in joined_users set when they join a voice channel
     if before.channel is None and after.channel is not None:
         util.manage_voice_activity(member.guild.id, member.id, add_user=True)
+        util.store_last_seen(member.guild.id, member.id)
 
     # Track channel join/leave
     if before.channel != after.channel:
@@ -536,10 +536,11 @@ async def on_voice_state_update(member, before, after):
         if before.channel is None:
             user_join_times[user_id] = now
             title = f'{member.display_name}#{member.discriminator} joined a voice channel'
-            description = f'> {member.mention} joined `{after.channel.category}.{after.channel.name}`'
+            last_seen = util.load_last_seen(member.guild.id, member.id)
+            description = f'> {member.mention} joined `{after.channel.category}.{after.channel.name}`\n> Last seen: {last_seen}'
             color = discord.Color.green()
             fields = [(f'Users in {after.channel.name}',
-                    util.user_list(after.channel))]
+                   util.user_list(after.channel))]
             await util.send_embed(log_channel, title, description, color, None, fields, None, thumbnail_url=avatar_url)
         # If the user left a voice channel
         elif after.channel is None:
