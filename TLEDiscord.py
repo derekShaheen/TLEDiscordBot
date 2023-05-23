@@ -313,7 +313,7 @@ async def restart_bot_loop():
     hour = now.hour
 
     # Schedule the bot to restart at 0400 on Tuesday (weekday 1)
-    if weekday == 1 and hour == 4:
+    if weekday == 1:
         print("Restarting bot...")
         await bot.close()
 
