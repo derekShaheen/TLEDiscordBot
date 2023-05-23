@@ -134,20 +134,23 @@ def save_config(guild_id, config):
 
 def store_last_seen(guild_id, user_id):
     seen_path = f'guilds/{guild_id}/users_seen.yml'
-
-    # Set the permissions before writing to the file
-    set_permissions(seen_path)
+    seen_data = {}
 
     if os.path.exists(seen_path):
         with open(seen_path, 'r') as file:
             seen_data = yaml.safe_load(file)
     else:
-        seen_data = {}
-
+        # Create the directory if it doesn't exist
+        os.makedirs(os.path.dirname(seen_path), exist_ok=True)
+        
     seen_data[user_id] = str(datetime.datetime.now())
-    
+
+    # Set the permissions before writing to the file
+    set_permissions(seen_path)
+
     with open(seen_path, 'w') as file:
         yaml.safe_dump(seen_data, file)
+
 
 def load_last_seen(guild_id, user_id):
     seen_path = f'guilds/{guild_id}/users_seen.yml'
