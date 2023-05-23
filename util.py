@@ -1,5 +1,6 @@
 # Standard library imports
 import os
+import stat
 from datetime import datetime
 
 # Third-party library imports
@@ -78,6 +79,13 @@ async def find_user_guild(client, user_id: int):
 
     return associated_guilds
 
+def set_permissions(path):
+    # Define the permission
+    permission = stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO
+
+    # Change the permission
+    os.chmod(path, permission)
+
 
 async def create_game_room(guild, category, name):
     return await guild.create_voice_channel("Game Room " + name, category=category)
@@ -126,6 +134,10 @@ def save_config(guild_id, config):
 
 def store_last_seen(guild_id, user_id):
     seen_path = f'guilds/{guild_id}/users_seen.yml'
+
+    # Set the permissions before writing to the file
+    set_permissions(seen_path)
+
     if os.path.exists(seen_path):
         with open(seen_path, 'r') as file:
             seen_data = yaml.safe_load(file)
@@ -139,7 +151,11 @@ def store_last_seen(guild_id, user_id):
 
 def load_last_seen(guild_id, user_id):
     seen_path = f'guilds/{guild_id}/users_seen.yml'
+    
     if os.path.exists(seen_path):
+        # Set the permissions before reading the file
+        set_permissions(seen_path)
+        
         with open(seen_path, 'r') as file:
             seen_data = yaml.safe_load(file)
             if user_id in seen_data:
