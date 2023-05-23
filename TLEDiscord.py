@@ -506,7 +506,6 @@ async def on_voice_state_update(member, before, after):
     # Store the user ID in joined_users set when they join a voice channel
     if before.channel is None and after.channel is not None:
         util.manage_voice_activity(member.guild.id, member.id, add_user=True)
-        util.store_last_seen(member.guild.id, member.id)
 
     # Track channel join/leave
     if before.channel != after.channel:
@@ -535,11 +534,14 @@ async def on_voice_state_update(member, before, after):
         # If the user joined a voice channel
         if before.channel is None:
             user_join_times[user_id] = now
-            title = f'{member.display_name}#{member.discriminator} joined a voice channel'
+            #title = f'{member.display_name}#{member.discriminator} joined a voice channel'
+            title = 'Connected to a voice channel'
             last_seen = util.load_last_seen(member.guild.id, member.id)
-            description = f'> {member.mention} joined `{after.channel.category}.{after.channel.name}`\n> Last seen: {last_seen}'
+            description = f'> {member.mention} joined `{after.channel.category}.{after.channel.name}`'
             color = discord.Color.green()
-            fields = [(f'Users in {after.channel.name}',
+            fields = [
+                (f'Last Seen on Server', f'{last_seen}'),
+                (f'Users in {after.channel.name}',
                    util.user_list(after.channel))]
             await util.send_embed(log_channel, title, description, color, None, fields, None, thumbnail_url=avatar_url)
         # If the user left a voice channel
@@ -547,7 +549,8 @@ async def on_voice_state_update(member, before, after):
             duration = round(
                 (now - user_join_times.pop(user_id, now)).total_seconds())
             formatted_duration = util.format_duration(duration)
-            title = f'{member.display_name}#{member.discriminator} left a voice channel'
+            #title = f'{member.display_name}#{member.discriminator} left a voice channel'
+            title = 'Disconnected from a voice channel'
             description = f'> {member.mention} left from `{before.channel.category}.{before.channel.name}`'
             color = discord.Color.red()
             fields = [
@@ -563,7 +566,7 @@ async def on_voice_state_update(member, before, after):
             formatted_duration = util.format_duration(duration)
             user_join_times[user_id] = now
             title = f'{member.display_name}#{member.discriminator} switched voice channels'
-            description = f'> {member.mention} moved from \n`{before.channel.category}.{before.channel.name}` ➦ `{after.channel.category}.{after.channel.name}`'
+            description = f'> User {member.mention} moved from \n`{before.channel.category}.{before.channel.name}` ➦ `{after.channel.category}.{after.channel.name}`'
             color = discord.Color.blue()
             fields = [
                 (f'Duration in {before.channel.name}',
@@ -574,6 +577,7 @@ async def on_voice_state_update(member, before, after):
                 util.user_list(after.channel))
             ]
             await util.send_embed(log_channel, title, description, color, None, fields, None, thumbnail_url=avatar_url)
+        util.store_last_seen(member.guild.id, member.id)
 
 
 
