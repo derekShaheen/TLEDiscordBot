@@ -290,7 +290,7 @@ def generate_plot(guilds: list):
 # Get the current time with config.SERVER_TIMEZONE
 
 
-def get_current_time(show_time=True, no_format=False) -> datetime:
+def get_current_time(show_time=True, no_format=False):
     if no_format:
         return datetime.now(pytz.timezone(SERVER_TIMEZONE))
     else:
