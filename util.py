@@ -241,7 +241,7 @@ async def send_developer_message(client, title, description, color, file=None, f
         await send_embed(developer, title, description, color, None, fields)
 
 
-def save_daily_report(guild_id: int, current_time: datetime | str, unique_users: int):
+def save_daily_report(guild_id: int, current_time: datetime, unique_users: int):
     daily_report_file = f'guilds/{guild_id}/daily_report_data.csv'
 
     # Create the guild directory if it doesn't exist
