@@ -2,6 +2,7 @@
 import os
 import stat
 from datetime import datetime
+from dateutil.relativedelta import relativedelta
 
 # Third-party library imports
 import discord
@@ -178,7 +179,7 @@ async def send_embed(recipient, title, description, color, url=None, fields=None
         await recipient.send(embed=embed)
 
 
-def manage_voice_activity(guild_id: int, user_id: int = None, add_user: bool = False):
+def manage_voice_activity(guild_id: int, user_id: int = 0, add_user: bool = False):
     guild_dir = f'guilds/{guild_id}'
     voice_activity_file = f'{guild_dir}/voice_activity.yml'
 
@@ -196,7 +197,7 @@ def manage_voice_activity(guild_id: int, user_id: int = None, add_user: bool = F
     else:
         voice_activity_data = set()
 
-    if add_user and user_id:
+    if add_user and (user_id != 0):
         # Add the user ID to voice_activity_data
         voice_activity_data.add(user_id)
 
@@ -240,7 +241,7 @@ async def send_developer_message(client, title, description, color, file=None, f
         await send_embed(developer, title, description, color, None, fields)
 
 
-def save_daily_report(guild_id: int, current_time: datetime, unique_users: int):
+def save_daily_report(guild_id: int, current_time: datetime | str, unique_users: int):
     daily_report_file = f'guilds/{guild_id}/daily_report_data.csv'
 
     # Create the guild directory if it doesn't exist
@@ -289,7 +290,7 @@ def generate_plot(guilds: list):
 # Get the current time with config.SERVER_TIMEZONE
 
 
-def get_current_time(show_time=True, no_format=False):
+def get_current_time(show_time=True, no_format=False) -> datetime:
     if no_format:
         return datetime.now(pytz.timezone(SERVER_TIMEZONE))
     else:
@@ -297,6 +298,37 @@ def get_current_time(show_time=True, no_format=False):
             return datetime.now(pytz.timezone(SERVER_TIMEZONE)).strftime('%Y-%m-%d %H:%M:%S')
         else:
             return datetime.now(pytz.timezone(SERVER_TIMEZONE)).strftime('%Y-%m-%d')
+
+def compute_time_difference(time_str):
+    fmt = '%Y-%m-%d %H:%M:%S'
+    now = datetime.now()
+    previous_time = datetime.strptime(time_str, fmt)
+    difference = relativedelta(now, previous_time)
+
+    time_diff_str = ""
+    if difference.years > 0:
+        time_diff_str += f'{difference.years} years, '
+
+    if difference.months > 0:
+        time_diff_str += f'{difference.months} months, '
+
+    if difference.days > 0:
+        time_diff_str += f'{difference.days} days, '
+
+    if difference.hours > 0:
+        time_diff_str += f'{difference.hours} hours, '
+
+    if difference.minutes > 0:
+        time_diff_str += f'{difference.minutes} minutes, '
+
+    if difference.seconds > 0:
+        time_diff_str += f'{difference.seconds} seconds, '
+
+    # If the string ends with ', ', remove it
+    if time_diff_str.endswith(", "):
+        time_diff_str = time_diff_str[:-2]
+
+    return f'{time_diff_str} ago'
 
 
 def populate_userlist(bot):

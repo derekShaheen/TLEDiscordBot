@@ -195,16 +195,26 @@ def generate_table() -> Table:
             latency_text = f"[{latency_color}]{latency_ms:.1f}ms[/{latency_color}]"
         else:
             latency_text = f"[{latency_color}]{latency_ms:.2f}ms[/{latency_color}]"
-
-        table.add_row(
-            uptime_str,
-            # current_time,
-            latency_text,
-            f"{truncated_guild_name}",
-            str(total_users),
-            str(users_in_voice_chat),
-            str(len(unique_users_in_voice_chat))
-        )
+        if unique_users_in_voice_chat is not None:
+            table.add_row(
+                uptime_str,
+                # current_time,
+                latency_text,
+                f"{truncated_guild_name}",
+                str(total_users),
+                str(users_in_voice_chat),
+                str(len(unique_users_in_voice_chat))
+            )
+        else:
+            table.add_row(
+                uptime_str,
+                # current_time,
+                latency_text,
+                f"{truncated_guild_name}",
+                str(total_users),
+                str(users_in_voice_chat),
+                "0"
+            )
 
     return table
 
@@ -534,15 +544,15 @@ async def on_voice_state_update(member, before, after):
         # If the user joined a voice channel
         if before.channel is None:
             user_join_times[user_id] = now
-            #title = f'{member.display_name}#{member.discriminator} joined a voice channel'
             title = 'Connected to a voice channel'
             last_seen = util.load_last_seen(member.guild.id, member.id)
+            time_difference = util.compute_time_difference(last_seen)
             description = f'> {member.mention} joined `{after.channel.category}.{after.channel.name}`'
             color = discord.Color.green()
             fields = [
-                (f'Last Seen on Server', f'{last_seen}'),
-                (f'Users in {after.channel.name}',
-                   util.user_list(after.channel))]
+                (f'Last Seen on Server', f'{time_difference} on {last_seen}'),
+                (f'Users in {after.channel.name}', util.user_list(after.channel))
+            ]
             await util.send_embed(log_channel, title, description, color, None, fields, None, thumbnail_url=avatar_url)
         # If the user left a voice channel
         elif after.channel is None:
