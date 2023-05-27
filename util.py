@@ -307,22 +307,22 @@ def compute_time_difference(time_str):
 
     time_diff_str = ""
     if difference.years > 0:
-        time_diff_str += f'{difference.years} years, '
+        time_diff_str += f'{difference.years} {pluralize(difference.years, "year", "years")}, '
 
     if difference.months > 0:
-        time_diff_str += f'{difference.months} months, '
+        time_diff_str += f'{difference.months} {pluralize(difference.months, "month", "months")}, '
 
     if difference.days > 0:
-        time_diff_str += f'{difference.days} days, '
+        time_diff_str += f'{difference.days} {pluralize(difference.days, "day", "days")}, '
 
     if difference.hours > 0:
-        time_diff_str += f'{difference.hours} hours, '
+        time_diff_str += f'{difference.hours} {pluralize(difference.hours, "hour", "hours")}, '
 
     if difference.minutes > 0:
-        time_diff_str += f'{difference.minutes} minutes, '
+        time_diff_str += f'{difference.minutes} {pluralize(difference.minutes, "minute", "minutes")}, '
 
     if difference.seconds > 0:
-        time_diff_str += f'{difference.seconds} seconds, '
+        time_diff_str += f'{difference.seconds} {pluralize(difference.seconds, "second", "seconds")}, '
 
     # If the string ends with ', ', remove it
     if time_diff_str.endswith(", "):

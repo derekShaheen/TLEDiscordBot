@@ -546,13 +546,20 @@ async def on_voice_state_update(member, before, after):
             user_join_times[user_id] = now
             title = 'Connected to a voice channel'
             last_seen = util.load_last_seen(member.guild.id, member.id)
-            time_difference = util.compute_time_difference(last_seen)
+            if last_seen != 'Never':
+                time_difference = util.compute_time_difference(last_seen)
             description = f'> {member.mention} joined `{after.channel.category}.{after.channel.name}`'
             color = discord.Color.green()
-            fields = [
-                (f'Last Seen on Server', f'{time_difference} on {last_seen}'),
-                (f'Users in {after.channel.name}', util.user_list(after.channel))
-            ]
+            if last_seen != 'Never':
+                fields = [
+                    (f'Last Seen on Server', f'{time_difference} on {last_seen}'),
+                    (f'Users in {after.channel.name}', util.user_list(after.channel))
+                ]
+            else:
+                fields = [
+                    (f'Last Seen on Server', f'{last_seen}'),
+                    (f'Users in {after.channel.name}', util.user_list(after.channel))
+                ]
             await util.send_embed(log_channel, title, description, color, None, fields, None, thumbnail_url=avatar_url)
         # If the user left a voice channel
         elif after.channel is None:
