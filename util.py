@@ -305,11 +305,11 @@ def generate_plot(guilds: list):
         stats_text = (
             f'Mean: {mean_value:.2f}\n'
             f'Median: {median_value}\n'
-            f'Standard Deviation: {std_dev:.2f}\n'
+            f'Std Deviation: {std_dev:.2f}\n'
             #f'Min: {min_value}   Max: {max_value}'
             f'Max: {max_value} on {max_value_date}'
         )
-        plt.figtext(0.1, 0.1, stats_text, horizontalalignment='left', verticalalignment='bottom')
+        plt.figtext(0.05, 0.05, stats_text, horizontalalignment='left', verticalalignment='bottom')
         
     plt.xlabel('Date')
     plt.ylabel('Unique Users')
