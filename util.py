@@ -11,6 +11,7 @@ import pandas as pd
 import pytz
 import requests
 import yaml
+import matplotlib.dates as mdates
 from matplotlib.ticker import MaxNLocator
 import numpy as np
 
@@ -314,8 +315,9 @@ def generate_plot(guilds: list):
     plt.xlabel('Date')
     plt.ylabel('Unique Users')
     plt.title(f'Daily Voice Channel Users')
-    #plt.xticks(rotation=45)
-    plt.autofmt_xdate()
+    plt.xticks(rotation=45)
+    plt.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+    plt.xaxis.set_major_locator(mdates.DayLocator(interval=5))
     plt.legend()
     plt.tight_layout()
 
