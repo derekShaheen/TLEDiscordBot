@@ -218,14 +218,6 @@ def generate_table() -> Table:
 
     return table
 
-
-async def live_heartbeat():
-    with Live(generate_table()) as live:
-        while True:
-            live.update(generate_table())
-            await asyncio.sleep(1)  # Adjust the update frequency as needed
-
-
 @tasks.loop(hours=24)
 async def check_and_move_users():
     for guild in bot.guilds:

@@ -268,12 +268,34 @@ def generate_plot(guilds: list):
         data = pd.read_csv(daily_report_file, names=[
                            'date', 'unique_users'], parse_dates=['date'])
         
+        mean_value = data['unique_users'].mean()
+        median_value = data['unique_users'].median()
+        std_dev = data['unique_users'].std()
+        #min_value = data['unique_users'].min()
+        max_value = data['unique_users'].max()
+        max_value_date = data['date'][data['unique_users'].idxmax()].strftime('%Y-%m-%d')
+        
         # Use only the bottom x rows of the data
         data = data.tail(90)
 
         # Generate the plot for the current guild
         plt.plot(data['date'], data['unique_users'], label=f'{guild_name}')
 
+        # Label the final data point
+        final_date = data['date'].iloc[-1]
+        final_value = data['unique_users'].iloc[-1]
+        plt.text(final_date, final_value, f'{final_value}')
+
+        # Display statistical information along the bottom of the graph
+        stats_text = (
+            f'Mean: {mean_value:.2f}\n'
+            f'Median: {median_value}\n'
+            f'Standard Deviation: {std_dev:.2f}\n'
+            #f'Min: {min_value}   Max: {max_value}'
+            f'Max: {max_value} on {max_value_date}'
+        )
+        plt.figtext(0.1, 0.01, stats_text, horizontalalignment='left', verticalalignment='bottom')
+        
     plt.xlabel('Date')
     plt.ylabel('Unique Users')
     plt.title(f'Daily Voice Channel Users')
