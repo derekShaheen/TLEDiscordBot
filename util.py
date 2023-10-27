@@ -288,7 +288,8 @@ def generate_plot(guilds: list):
         trendline = coeffs[0] * x + coeffs[1]
 
         # Plot the linear trendline
-        plt.plot(data['date'], trendline, label=f'Trendline {guild_name}', linestyle='--')
+        #plt.plot(data['date'], trendline, label=f'Trendline {guild_name}', linestyle='--')
+        plt.plot(data['date'], trendline, label=f'Trendline', linestyle='--')
 
         # Fill the area between the trendline and the unique_users plot
         plt.fill_between(data['date'], data['unique_users'], trendline,
@@ -308,12 +309,12 @@ def generate_plot(guilds: list):
             #f'Min: {min_value}   Max: {max_value}'
             f'Max: {max_value} on {max_value_date}'
         )
-        plt.figtext(0.1, 0.01, stats_text, horizontalalignment='left', verticalalignment='bottom')
+        plt.figtext(0.05, 0.01, stats_text, horizontalalignment='left', verticalalignment='bottom')
         
     plt.xlabel('Date')
     plt.ylabel('Unique Users')
     plt.title(f'Daily Voice Channel Users')
-    #plt.xticks(rotation=45)
+    plt.xticks(rotation=45)
     plt.legend()
     plt.tight_layout()
 
