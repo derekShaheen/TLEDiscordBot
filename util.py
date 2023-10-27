@@ -294,7 +294,7 @@ def generate_plot(guilds: list):
         # Fill the area between the trendline and the unique_users plot
         plt.fill_between(data['date'], data['unique_users'], trendline,
                          where=(data['unique_users'] > trendline),
-                         interpolate=True, alpha=0.5, label='Above Trendline')
+                         interpolate=True, alpha=0.5)
 
         # Label the final data point
         final_date = data['date'].iloc[-1]
@@ -309,7 +309,7 @@ def generate_plot(guilds: list):
             #f'Min: {min_value}   Max: {max_value}'
             f'Max: {max_value} on {max_value_date}'
         )
-        plt.figtext(0.1, 0.25, stats_text, horizontalalignment='left', verticalalignment='bottom')
+        plt.figtext(0.125, 0.25, stats_text, horizontalalignment='left', verticalalignment='bottom')
         
     plt.xlabel('Date')
     plt.ylabel('Unique Users')
