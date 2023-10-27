@@ -314,7 +314,8 @@ def generate_plot(guilds: list):
     plt.xlabel('Date')
     plt.ylabel('Unique Users')
     plt.title(f'Daily Voice Channel Users')
-    plt.xticks(rotation=45)
+    #plt.xticks(rotation=45)
+    plt.autofmt_xdate()
     plt.legend()
     plt.tight_layout()
 
