@@ -12,6 +12,7 @@ import pytz
 import requests
 import yaml
 from matplotlib.ticker import MaxNLocator
+import numpy as np
 
 # Local imports
 from config import DEVELOPER_ID, SERVER_TIMEZONE, GITHUB_TOKEN
@@ -280,6 +281,19 @@ def generate_plot(guilds: list):
 
         # Generate the plot for the current guild
         plt.plot(data['date'], data['unique_users'], label=f'{guild_name}')
+
+        # Compute the coefficients of the linear trendline
+        x = np.arange(len(data))
+        coeffs = np.polyfit(x, data['unique_users'], 1)
+        trendline = coeffs[0] * x + coeffs[1]
+
+        # Plot the linear trendline
+        plt.plot(data['date'], trendline, label=f'Trendline {guild_name}', linestyle='--')
+
+        # Fill the area between the trendline and the unique_users plot
+        plt.fill_between(data['date'], data['unique_users'], trendline,
+                         where=(data['unique_users'] > trendline),
+                         interpolate=True, alpha=0.5, label='Above Trendline')
 
         # Label the final data point
         final_date = data['date'].iloc[-1]
