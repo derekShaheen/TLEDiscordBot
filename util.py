@@ -309,7 +309,7 @@ def generate_plot(guilds: list):
             #f'Min: {min_value}   Max: {max_value}'
             f'Max: {max_value} on {max_value_date}'
         )
-        plt.figtext(0.05, 0.05, stats_text, horizontalalignment='left', verticalalignment='bottom')
+        plt.figtext(0.1, 0.25, stats_text, horizontalalignment='left', verticalalignment='bottom')
         
     plt.xlabel('Date')
     plt.ylabel('Unique Users')
