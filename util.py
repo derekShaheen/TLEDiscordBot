@@ -267,6 +267,9 @@ def generate_plot(guilds: list):
         # Read the daily report data and create a DataFrame
         data = pd.read_csv(daily_report_file, names=[
                            'date', 'unique_users'], parse_dates=['date'])
+        
+        # Use only the bottom x rows of the data
+        data = data.tail(90)
 
         # Generate the plot for the current guild
         plt.plot(data['date'], data['unique_users'], label=f'{guild_name}')

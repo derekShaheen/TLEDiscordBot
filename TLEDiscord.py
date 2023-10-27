@@ -86,8 +86,8 @@ async def on_ready():
     title = f"Bot Online [{initial_run_sha}]"
     description = message_content
     color = discord.Color.green()
-    await util.send_developer_message(bot, title, description, color)
-
+    #await util.send_developer_message(bot, title, description, color)
+    await daily_report()
     # print("Ready...")
 
 
@@ -181,7 +181,7 @@ def generate_table() -> Table:
         users_in_voice_chat = sum(
             1 for member in guild.members if member.voice)
         unique_users_in_voice_chat = util.manage_voice_activity(
-            guild.id, None, add_user=False)
+            guild.id, 0, add_user=False)
 
         # Truncate the guild name to 17 characters
         truncated_guild_name = guild.name[:20]
@@ -262,8 +262,11 @@ async def daily_report():
 
     # Update the voice activity data
     for guild in bot.guilds:
-        userlist = util.manage_voice_activity(guild.id, None, add_user=False)
-        unique_users = len(userlist)
+        userlist = util.manage_voice_activity(guild.id, 0, add_user=False)
+        if userlist is None:
+            unique_users = 0
+        else:
+            unique_users = len(userlist)
 
         # Save the daily report data to a file
         util.save_daily_report(guild.id, current_time, unique_users)
@@ -318,7 +321,7 @@ async def check_version():
 
 @tasks.loop(hours=24)
 async def restart_bot_loop():
-    now = datetime.datetime.now()
+    now = datetime.now()
     weekday = now.weekday()  # Monday is 0 and Sunday is 6
 
     # Schedule the bot to restart at 0400 on Tuesday (weekday 1)
