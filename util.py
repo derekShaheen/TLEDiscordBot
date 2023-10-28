@@ -241,7 +241,6 @@ async def send_developer_message(client, title, description, color, file=None, f
     else:
         await send_embed(developer, title, description, color, None, fields)
 
-
 def save_daily_report(guild_id: int, current_time: datetime, unique_users: int):
     daily_report_file = f'guilds/{guild_id}/daily_report_data.csv'
 
@@ -252,7 +251,6 @@ def save_daily_report(guild_id: int, current_time: datetime, unique_users: int):
     report_data = f'{current_time},{unique_users}\n'
     with open(daily_report_file, 'a') as file:
         file.write(report_data)
-
 
 def generate_plot(guilds: list):
     plot_image_file = f'daily_report_plot.png'
@@ -310,7 +308,11 @@ def generate_plot(guilds: list):
             f'Max: {max_value} on {max_value_date}'
         )
         plt.figtext(0.1225, 0.25, stats_text, horizontalalignment='left', verticalalignment='bottom')
-        
+
+        # Write the trendline equation to the bottom right of the graph
+        trendline_equation = f'y = {coeffs[0]:.2f}x + {coeffs[1]:.2f}'
+        plt.figtext(0.8775, 0.25, trendline_equation, horizontalalignment='right', verticalalignment='bottom')
+
     plt.xlabel('Date')
     plt.ylabel('Unique Users')
     plt.title(f'Daily Voice Channel Users')
@@ -326,9 +328,6 @@ def generate_plot(guilds: list):
     plt.savefig(plot_image_file)
 
     return plot_image_file
-
-# Get the current time with config.SERVER_TIMEZONE
-
 
 def get_current_time(show_time=True, no_format=False):
     if no_format:
