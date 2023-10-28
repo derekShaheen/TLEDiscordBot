@@ -287,7 +287,7 @@ def generate_plot(guilds: list):
 
         # Plot the linear trendline
         #plt.plot(data['date'], trendline, label=f'Trendline {guild_name}', linestyle='--')
-        plt.plot(data['date'], trendline, label=f'Trendline ({coeffs[0]:.2f}x + {coeffs[1]:.2f})', linestyle='--')
+        plt.plot(data['date'], trendline, label=f'Trend ({coeffs[0]:.2f}x + {coeffs[1]:.2f})', linestyle='--')
 
         # Fill the area between the trendline and the unique_users plot
         plt.fill_between(data['date'], data['unique_users'], trendline,
