@@ -287,7 +287,7 @@ def generate_plot(guilds: list):
 
         # Plot the linear trendline
         #plt.plot(data['date'], trendline, label=f'Trendline {guild_name}', linestyle='--')
-        plt.plot(data['date'], trendline, label=f'Trendline', linestyle='--')
+        plt.plot(data['date'], trendline, label=f'Trendline ({coeffs[0]:.2f}x + {coeffs[1]:.2f})', linestyle='--')
 
         # Fill the area between the trendline and the unique_users plot
         plt.fill_between(data['date'], data['unique_users'], trendline,
@@ -308,10 +308,6 @@ def generate_plot(guilds: list):
             f'Max: {max_value} on {max_value_date}'
         )
         plt.figtext(0.1225, 0.25, stats_text, horizontalalignment='left', verticalalignment='bottom')
-
-        # Write the trendline equation to the bottom right of the graph
-        trendline_equation = f'y = {coeffs[0]:.2f}x + {coeffs[1]:.2f}'
-        plt.figtext(0.8775, 0.25, trendline_equation, horizontalalignment='right', verticalalignment='bottom')
 
     plt.xlabel('Date')
     plt.ylabel('Unique Users')
