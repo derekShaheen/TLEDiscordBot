@@ -87,7 +87,7 @@ async def on_ready():
     description = message_content
     color = discord.Color.green()
     #await util.send_developer_message(bot, title, description, color)
-    await daily_report()
+    #await daily_report()
     # print("Ready...")
 
 
