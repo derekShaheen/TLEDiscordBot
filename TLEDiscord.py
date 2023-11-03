@@ -87,7 +87,7 @@ async def on_ready():
     description = message_content
     color = discord.Color.green()
     #await util.send_developer_message(bot, title, description, color)
-    await daily_report()
+    #await daily_report()
     # print("Ready...")
 
 
@@ -223,6 +223,11 @@ async def check_and_move_users():
     for guild in bot.guilds:
         source_channel = discord.utils.get(
             guild.voice_channels, name="Twerk")
+        
+        if source_channel is None:
+            source_channel = discord.utils.get(
+                guild.voice_channels, name="Work")
+
         member_general_channel = discord.utils.get(
             guild.voice_channels, name="Member General")
 

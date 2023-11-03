@@ -248,9 +248,31 @@ def save_daily_report(guild_id: int, current_time: datetime, unique_users: int):
     guild_dir = os.path.dirname(daily_report_file)
     os.makedirs(guild_dir, exist_ok=True)
 
-    report_data = f'{current_time},{unique_users}\n'
-    with open(daily_report_file, 'a') as file:
-        file.write(report_data)
+    # If the file exists, read the existing data; otherwise, create an empty DataFrame
+    if os.path.exists(daily_report_file):
+        data = pd.read_csv(daily_report_file, names=['date', 'unique_users'], parse_dates=['date'])
+    else:
+        data = pd.DataFrame(columns=['date', 'unique_users'])
+
+    # Convert current_time to string
+    current_time_str = current_time.strftime('%Y-%m-%d')
+
+    # Check if there's already a record for current_time
+    existing_record_index = data[data['date'] == current_time_str].index
+
+    if not existing_record_index.empty:
+        # If there's an existing record, check if unique_users is greater
+        existing_value = data.loc[existing_record_index, 'unique_users'].values[0]
+        if unique_users > existing_value:
+            # If unique_users is greater, update the existing record
+            data.loc[existing_record_index, 'unique_users'] = unique_users
+    else:
+        # If there's no existing record, append a new record
+        new_record = pd.DataFrame({'date': [current_time_str], 'unique_users': [unique_users]})
+        data = pd.concat([data, new_record], ignore_index=True)
+
+    # Write the updated data back to the file
+    data.to_csv(daily_report_file, index=False, header=False)
 
 def generate_plot(guilds: list):
     plot_image_file = f'daily_report_plot.png'
