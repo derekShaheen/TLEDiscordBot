@@ -267,9 +267,6 @@ def generate_plot(guilds: list):
         data = pd.read_csv(daily_report_file, names=[
                            'date', 'unique_users'], parse_dates=['date'])
         
-        mean_value = data['unique_users'].mean()
-        median_value = data['unique_users'].median()
-        std_dev = data['unique_users'].std()
         #min_value = data['unique_users'].min()
         max_value = data['unique_users'].max()
         max_value_date = data['date'][data['unique_users'].idxmax()].strftime('%Y-%m-%d')
@@ -277,6 +274,10 @@ def generate_plot(guilds: list):
         # Use only the bottom x rows of the data
         data = data.tail(90)
 
+        mean_value = data['unique_users'].mean()
+        median_value = data['unique_users'].median()
+        std_dev = data['unique_users'].std()
+        
         # Generate the plot for the current guild
         plt.plot(data['date'], data['unique_users'], label=f'{guild_name}')
 
