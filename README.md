@@ -25,7 +25,7 @@ This Discord bot is designed to monitor server activity, particularly focusing o
 - Daily activity reports and automated user movements based on predefined schedules.
 
 ![Image](https://i.imgur.com/d5wyY5u.png)
-![Image2](https://i.imgur.com/Vj9kwND.png)
+![Image2](https://i.imgur.com/A2JScAh.png)
 
 ## Development
 
