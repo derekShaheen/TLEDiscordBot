@@ -241,16 +241,17 @@ async def send_developer_message(client, title, description, color, file=None, f
     else:
         await send_embed(developer, title, description, color, None, fields)
 
-def save_daily_report(guild_id: int, current_time: datetime, unique_users: int):
+def save_daily_report(guild_id: int, current_time: datetime, unique_users: int, total_voice_minutes: int):
     daily_report_file = f'guilds/{guild_id}/daily_report_data.csv'
 
     # Create the guild directory if it doesn't exist
     guild_dir = os.path.dirname(daily_report_file)
     os.makedirs(guild_dir, exist_ok=True)
 
-    report_data = f'{current_time},{unique_users}\n'
+    report_data = f'{current_time},{unique_users},{total_voice_minutes}\n'
     with open(daily_report_file, 'a') as file:
         file.write(report_data)
+
 
 def generate_plot(guilds: list):
     plot_image_file = f'daily_report_plot.png'
@@ -264,22 +265,28 @@ def generate_plot(guilds: list):
         daily_report_file = f'guilds/{guild_id}/daily_report_data.csv'
 
         # Read the daily report data and create a DataFrame
-        data = pd.read_csv(daily_report_file, names=[
-                           'date', 'unique_users'], parse_dates=['date'])
-        
-        #min_value = data['unique_users'].min()
+        with open(daily_report_file, 'r') as file:
+            first_line = file.readline().strip()
+            columns = first_line.split(',')
+            if len(columns) == 2:
+                data = pd.read_csv(daily_report_file, names=['date', 'unique_users'], parse_dates=['date'], skiprows=1)
+                data['total_voice_minutes'] = 0  # Add a default column for total_voice_minutes
+            else:
+                data = pd.read_csv(daily_report_file, names=['date', 'unique_users', 'total_voice_minutes'], parse_dates=['date'], skiprows=1)
+
         max_value = data['unique_users'].max()
         max_value_date = data['date'][data['unique_users'].idxmax()].strftime('%Y-%m-%d')
-        
+
         # Use only the bottom x rows of the data
         data = data.tail(90)
 
         mean_value = data['unique_users'].mean()
         median_value = data['unique_users'].median()
         std_dev = data['unique_users'].std()
-        
+
         # Generate the plot for the current guild
-        plt.plot(data['date'], data['unique_users'], label=f'{guild_name}')
+        plt.plot(data['date'], data['unique_users'], label=f'{guild_name} - Unique Users')
+        plt.plot(data['date'], data['total_voice_minutes'], label=f'{guild_name} - Total Voice Minutes', linestyle='--')
 
         # Compute the coefficients of the linear trendline
         x = np.arange(len(data))
@@ -287,7 +294,6 @@ def generate_plot(guilds: list):
         trendline = coeffs[0] * x + coeffs[1]
 
         # Plot the linear trendline
-        #plt.plot(data['date'], trendline, label=f'Trendline {guild_name}', linestyle='--')
         plt.plot(data['date'], trendline, label=f'Trend ({coeffs[0]:.2f}x + {coeffs[1]:.2f})', linestyle='--')
 
         # Fill the area between the trendline and the unique_users plot
@@ -305,14 +311,13 @@ def generate_plot(guilds: list):
             f'Mean: {mean_value:.2f}\n'
             f'Median: {median_value}\n'
             f'Std Deviation: {std_dev:.2f}\n'
-            #f'Min: {min_value}   Max: {max_value}'
             f'Max: {max_value} on {max_value_date}'
         )
         plt.figtext(0.1225, 0.25, stats_text, horizontalalignment='left', verticalalignment='bottom')
 
     plt.xlabel('Date')
-    plt.ylabel('Unique Users')
-    plt.title(f'Daily Voice Channel Users')
+    plt.ylabel('Users/Minutes')
+    plt.title(f'Daily Voice Channel Usage')
     plt.xticks(rotation=45)
     plt.legend()
     plt.tight_layout()
@@ -325,6 +330,7 @@ def generate_plot(guilds: list):
     plt.savefig(plot_image_file)
 
     return plot_image_file
+
 
 def get_current_time(show_time=True, no_format=False):
     if no_format:

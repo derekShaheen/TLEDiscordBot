@@ -27,6 +27,7 @@ heartbeat_counter = 0
 user_join_times = {}
 initial_run_sha = 0
 max_auto_channels = 9
+daily_voice_minutes = {}
 
 tle_prefix = '!'
 
@@ -265,8 +266,11 @@ async def daily_report():
         else:
             unique_users = len(userlist)
 
+        # Get the total voice minutes for the guild
+        total_voice_minutes = daily_voice_minutes.get(guild.id, 0)
+
         # Save the daily report data to a file
-        util.save_daily_report(guild.id, current_time, unique_users)
+        util.save_daily_report(guild.id, current_time, unique_users, total_voice_minutes)
         if (guild.id == 262726474967023619) and config.get('logging_enabled', True) == True: # Hardcoding for TLE
             log_channel_name = config['log_channel_name']
             log_channel = discord.utils.get(
@@ -298,6 +302,8 @@ async def daily_report():
         with open(plot_image_file, 'rb') as file:
             await util.send_developer_message(bot, title, description, color, file=discord.File(file))
         
+    # Reset daily voice minutes
+    daily_voice_minutes = {}
 
     for guild in bot.guilds:
         util.clear_voice_activity(guild.id)
@@ -439,36 +445,6 @@ async def on_member_update(before, after):
     if before.nick != after.nick:
         await log_event(after.guild, config['log_channel_name'], f'{after.display_name} changed their nickname', f'Before: {before.nick}\nAfter: {after.nick}', discord.Color.blue())
 
-
-# @bot.event
-# async def on_message_delete(message):
-#     await log_event(message.guild, config['log_channel_name'], f'{message.author.display_name} deleted a message', message.content, discord.Color.red(), timestamp=message.created_at)
-
-
-# @bot.event
-# async def on_message_edit(before, after):
-#     if before.content != after.content:
-#         await log_event(after.guild, config['log_channel_name'], f'{after.author.display_name} edited a message', f'Before: {before.content}\nAfter: {after.content}', discord.Color.blue(), timestamp=after.edited_at)
-
-# @bot.event
-# async def on_message(message):
-#     if message.author.bot:
-#         return
-
-#     if not message.guild:  # Check if the message is a private message
-#         user_id = message.author.id
-#         associated_guilds = await util.find_user_guild(bot, user_id)
-
-#         if associated_guilds:
-#             response = "You are associated with the following server(s):\n"
-#             for guild in associated_guilds:
-#                 response += f"{guild.name}\n"
-#         else:
-#             response = "You are not associated with any servers the bot is connected to."
-
-#         await message.channel.send(response)
-
-
 @bot.event
 async def on_voice_state_update(member, before, after):
     # Handle Game Room voice channel creation / deletion
@@ -566,7 +542,12 @@ async def on_voice_state_update(member, before, after):
             duration = round(
                 (now - user_join_times.pop(user_id, now)).total_seconds())
             formatted_duration = util.format_duration(duration)
-            #title = f'{member.display_name}#{member.discriminator} left a voice channel'
+
+            # Update daily voice minutes
+            if member.guild.id not in daily_voice_minutes:
+                daily_voice_minutes[member.guild.id] = 0
+            daily_voice_minutes[member.guild.id] += duration // 60
+
             title = 'Disconnected from a voice channel'
             description = f'> {member.mention} left from `{before.channel.category}.{before.channel.name}`'
             color = discord.Color.red()
@@ -581,6 +562,12 @@ async def on_voice_state_update(member, before, after):
             duration = round(
                 (now - user_join_times.pop(user_id, now)).total_seconds())
             formatted_duration = util.format_duration(duration)
+
+            # Update daily voice minutes
+            if member.guild.id not in daily_voice_minutes:
+                daily_voice_minutes[member.guild.id] = 0
+            daily_voice_minutes[member.guild.id] += duration // 60
+
             user_join_times[user_id] = now
             title = f'{member.display_name}#{member.discriminator} switched voice channels'
             description = f'> User {member.mention} moved from \n`{before.channel.category}.{before.channel.name}` ➦ `{after.channel.category}.{after.channel.name}`'
