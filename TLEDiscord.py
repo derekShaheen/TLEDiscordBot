@@ -548,6 +548,8 @@ async def on_voice_state_update(member, before, after):
                 daily_voice_minutes[member.guild.id] = 0
             daily_voice_minutes[member.guild.id] += duration // 60
 
+            print(f'User {member.mention} left voice channel. Current usage for the day is : \t {daily_voice_minutes[member.guild.id]}')
+
             title = 'Disconnected from a voice channel'
             description = f'> {member.mention} left from `{before.channel.category}.{before.channel.name}`'
             color = discord.Color.red()
