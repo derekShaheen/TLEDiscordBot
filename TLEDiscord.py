@@ -4,6 +4,29 @@ from datetime import time, timedelta, datetime
 import math
 import sys
 from os import execv
+import subprocess
+import importlib
+
+def verify_libraries_installed(libraries):
+    for library in libraries:
+        try:
+            importlib.import_module(library[0])
+        except ImportError:
+            print(f"{library[0]} not installed. Installing...")
+            subprocess.call([sys.executable, "-m", "pip", "install", library[1]])
+
+libraries = [
+    ("discord", "discord.py"),
+    ("rich", "rich"),
+    ("matplotlib", "matplotlib"),
+    ("pandas", "pandas"),
+    ("pytz", "pytz"),
+    ("requests", "requests"),
+    ("yaml", "PyYAML"),
+    ("numpy", "numpy")
+]
+
+verify_libraries_installed(libraries)
 
 # Third-party imports
 import discord
@@ -88,7 +111,7 @@ async def on_ready():
     description = message_content
     color = discord.Color.green()
     #await util.send_developer_message(bot, title, description, color)
-    #await daily_report()
+    await daily_report()
     # print("Ready...")
 
 
@@ -251,6 +274,8 @@ async def check_and_move_users():
 
 @tasks.loop(hours=24)
 async def daily_report():
+    global daily_voice_minutes
+    print("Generating daily report...")
     config = util.load_config('262726474967023619') # Hardcoding for TLE
     current_time = util.get_current_time(False)
     # Create the message embed
@@ -271,7 +296,8 @@ async def daily_report():
 
         # Save the daily report data to a file
         util.save_daily_report(guild.id, current_time, unique_users, total_voice_minutes)
-        if (guild.id == 262726474967023619) and config.get('logging_enabled', True) == True: # Hardcoding for TLE
+        #if (guild.id == 262726474967023619) and config.get('logging_enabled', True) == True: # Hardcoding for TLE
+        if config.get('logging_enabled', True) == True: # Hardcoding for TLE
             log_channel_name = config['log_channel_name']
             log_channel = discord.utils.get(
                 guild.text_channels, name=log_channel_name)
@@ -447,6 +473,7 @@ async def on_member_update(before, after):
 
 @bot.event
 async def on_voice_state_update(member, before, after):
+    global daily_voice_minutes
     # Handle Game Room voice channel creation / deletion
     categories_to_monitor = ["Member Game Rooms", "Public Game Rooms"]
 

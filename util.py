@@ -256,6 +256,7 @@ def save_daily_report(guild_id: int, current_time: datetime, unique_users: int, 
         file.write(report_data)
 
 def generate_plot(guilds: list):
+    print(f'Generating plot...')
     plot_image_file = f'daily_report_plot.png'
 
     plt.figure()
@@ -271,10 +272,10 @@ def generate_plot(guilds: list):
             first_line = file.readline().strip()
             columns = first_line.split(',')
             if len(columns) == 2:
-                data = pd.read_csv(daily_report_file, names=['date', 'unique_users'], parse_dates=['date'], skiprows=1)
+                data = pd.read_csv(daily_report_file, names=['date', 'unique_users'], parse_dates=['date'])
                 data['total_voice_hours'] = 0  # Add a default column for total_voice_hours
             else:
-                data = pd.read_csv(daily_report_file, names=['date', 'unique_users', 'total_voice_minutes'], parse_dates=['date'], skiprows=1)
+                data = pd.read_csv(daily_report_file, names=['date', 'unique_users', 'total_voice_minutes'], parse_dates=['date'])
                 data['total_voice_hours'] = data['total_voice_minutes'] / 60.0
 
         max_value = data['unique_users'].max()
@@ -305,7 +306,7 @@ def generate_plot(guilds: list):
         x = np.arange(len(data))
         coeffs = np.polyfit(x, data['unique_users'], 1)
         trendline = coeffs[0] * x + coeffs[1]
-        ax1.plot(data['date'], trendline, label=f'Trend ({coeffs[0]:.2f}x + {coeffs[1]:.2f})', color='tab:green', linestyle='--')
+        trendline_plot, = ax1.plot(data['date'], trendline, label=f'Trend ({coeffs[0]:.2f}x + {coeffs[1]:.2f})', color='tab:green', linestyle='--')
 
         # Fill the area between the trendline and the unique_users plot
         ax1.fill_between(data['date'], data['unique_users'], trendline, where=(data['unique_users'] > trendline), interpolate=True, alpha=0.5, color='tab:blue', edgecolor='none')
@@ -326,10 +327,16 @@ def generate_plot(guilds: list):
 
         # Format the x-axis to show dates properly
         ax1.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-        ax1.xaxis.set_major_locator(mdates.DayLocator(interval=5))
+        ax1.xaxis.set_major_locator(mdates.DayLocator(interval=15))
         plt.setp(ax1.xaxis.get_majorticklabels(), rotation=45)
 
+        ax1.yaxis.set_major_locator(MaxNLocator(integer=True))
+
+        # Add a legend
+        #fig.legend()
+        fig.legend(handles=[trendline_plot], loc='upper left')
         fig.tight_layout()  # Otherwise the right y-label is slightly clipped
+        fig.subplots_adjust(top=0.93)  # Adjust the top padding to ensure the title is not cut off
 
     plt.title(f'Daily Voice Channel Usage')
 
@@ -404,5 +411,5 @@ def get_latest_commit_sha():
 
         return short_sha
     else:
-        print(f"Error: {response.status_code}")
+        print(f"Error checking version: {response.status_code}")
         return None
