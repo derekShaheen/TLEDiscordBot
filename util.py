@@ -7,6 +7,7 @@ from dateutil.relativedelta import relativedelta
 # Third-party library imports
 import discord
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 import pandas as pd
 import pytz
 import requests
@@ -244,6 +245,8 @@ async def send_developer_message(client, title, description, color, file=None, f
 def save_daily_report(guild_id: int, current_time: datetime, unique_users: int, total_voice_minutes: int):
     daily_report_file = f'guilds/{guild_id}/daily_report_data.csv'
 
+    print(f'Saving report data... {current_time}, {unique_users}, {total_voice_minutes}')
+
     # Create the guild directory if it doesn't exist
     guild_dir = os.path.dirname(daily_report_file)
     os.makedirs(guild_dir, exist_ok=True)
@@ -251,7 +254,6 @@ def save_daily_report(guild_id: int, current_time: datetime, unique_users: int, 
     report_data = f'{current_time},{unique_users},{total_voice_minutes}\n'
     with open(daily_report_file, 'a') as file:
         file.write(report_data)
-
 
 def generate_plot(guilds: list):
     plot_image_file = f'daily_report_plot.png'
@@ -270,9 +272,10 @@ def generate_plot(guilds: list):
             columns = first_line.split(',')
             if len(columns) == 2:
                 data = pd.read_csv(daily_report_file, names=['date', 'unique_users'], parse_dates=['date'], skiprows=1)
-                data['total_voice_minutes'] = 0  # Add a default column for total_voice_minutes
+                data['total_voice_hours'] = 0  # Add a default column for total_voice_hours
             else:
                 data = pd.read_csv(daily_report_file, names=['date', 'unique_users', 'total_voice_minutes'], parse_dates=['date'], skiprows=1)
+                data['total_voice_hours'] = data['total_voice_minutes'] / 60.0
 
         max_value = data['unique_users'].max()
         max_value_date = data['date'][data['unique_users'].idxmax()].strftime('%Y-%m-%d')
@@ -284,27 +287,33 @@ def generate_plot(guilds: list):
         median_value = data['unique_users'].median()
         std_dev = data['unique_users'].std()
 
-        # Generate the plot for the current guild
-        plt.plot(data['date'], data['unique_users'], label=f'{guild_name} - Unique Users')
-        plt.plot(data['date'], data['total_voice_minutes'], label=f'{guild_name} - Total Voice Minutes', linestyle='--')
+        fig, ax1 = plt.subplots()
 
-        # Compute the coefficients of the linear trendline
+        color = 'tab:blue'
+        ax1.set_xlabel('Date')
+        ax1.set_ylabel('Unique Users', color=color)
+        ax1.plot(data['date'], data['unique_users'], label=f'{guild_name} - Unique Users', color=color)
+        ax1.tick_params(axis='y', labelcolor=color)
+
+        ax2 = ax1.twinx()  # Instantiate a second axes that shares the same x-axis
+        color = 'tab:red'
+        ax2.set_ylabel('Total Voice Hours', color=color)
+        ax2.plot(data['date'], data['total_voice_hours'].round(2), label=f'{guild_name} - Total Voice Hours', color=color, linestyle='--')
+        ax2.tick_params(axis='y', labelcolor=color)
+
+        # Compute the coefficients of the linear trendline for unique users
         x = np.arange(len(data))
         coeffs = np.polyfit(x, data['unique_users'], 1)
         trendline = coeffs[0] * x + coeffs[1]
-
-        # Plot the linear trendline
-        plt.plot(data['date'], trendline, label=f'Trend ({coeffs[0]:.2f}x + {coeffs[1]:.2f})', linestyle='--')
+        ax1.plot(data['date'], trendline, label=f'Trend ({coeffs[0]:.2f}x + {coeffs[1]:.2f})', color='tab:green', linestyle='--')
 
         # Fill the area between the trendline and the unique_users plot
-        plt.fill_between(data['date'], data['unique_users'], trendline,
-                         where=(data['unique_users'] > trendline),
-                         interpolate=True, alpha=0.5)
+        ax1.fill_between(data['date'], data['unique_users'], trendline, where=(data['unique_users'] > trendline), interpolate=True, alpha=0.5, color='tab:blue', edgecolor='none')
 
-        # Label the final data point
+        # Label the final data point for unique users
         final_date = data['date'].iloc[-1]
         final_value = data['unique_users'].iloc[-1]
-        plt.text(final_date, final_value, f'{final_value}')
+        ax1.text(final_date, final_value, f'{final_value}')
 
         # Display statistical information along the bottom of the graph
         stats_text = (
@@ -315,16 +324,14 @@ def generate_plot(guilds: list):
         )
         plt.figtext(0.1225, 0.25, stats_text, horizontalalignment='left', verticalalignment='bottom')
 
-    plt.xlabel('Date')
-    plt.ylabel('Users/Minutes')
-    plt.title(f'Daily Voice Channel Usage')
-    plt.xticks(rotation=45)
-    plt.legend()
-    plt.tight_layout()
+        # Format the x-axis to show dates properly
+        ax1.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+        ax1.xaxis.set_major_locator(mdates.DayLocator(interval=5))
+        plt.setp(ax1.xaxis.get_majorticklabels(), rotation=45)
 
-    # Set the y-axis ticks to integer values
-    ax = plt.gca()
-    ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+        fig.tight_layout()  # Otherwise the right y-label is slightly clipped
+
+    plt.title(f'Daily Voice Channel Usage')
 
     # Save the plot as an image
     plt.savefig(plot_image_file)
