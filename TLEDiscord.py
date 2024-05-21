@@ -68,8 +68,9 @@ bot_start_time = datetime.now() + timedelta(seconds=2)
 
 @bot.event
 async def on_ready():
-    global initial_run_sha
+    global initial_run_sha, daily_voice_minutes
     initial_run_sha = util.get_latest_commit_sha()
+    daily_voice_minutes = util.load_daily_voice_minutes()
 
     print("----------------------")
     print("Logged in at: %s" % util.get_current_time())
@@ -77,13 +78,12 @@ async def on_ready():
     print("\tID: %s" % bot.user.id)
     print(
         f"\tInvite URL: https://discordapp.com/oauth2/authorize?client_id={bot.user.id}&scope=bot&permissions=8")
-    # print(f"Connection latency: {bot.latency * 1000:.0f}ms")
     print("----------------------")
 
     print("Bot is running on the following servers:")
     for guild in bot.guilds:
         print(f"\tServer: {guild.name} (ID: {guild.id})")
-        #print(f"\t\tMember count: {len(guild.members)}")
+        print(f"\t\tLoaded daily voice: {daily_voice_minutes.get(guild.id, 0)} minutes")
 
     print("----------------------")
     util.populate_userlist(bot)
@@ -101,18 +101,17 @@ async def on_ready():
     check_version.start()
     restart_bot_loop.start()
     #heartbeat_loop.start()
+    
+    # message_content = f'{bot.user} is now online and connected to the following servers:\n'
+    # for guild in bot.guilds:
+    #     message_content += f'{guild.name} (id: {guild.id})\n'
 
-    # Prepare the message content
-    message_content = f'{bot.user} is now online and connected to the following servers:\n'
-    for guild in bot.guilds:
-        message_content += f'{guild.name} (id: {guild.id})\n'
-
-    title = f"Bot Online [{initial_run_sha}]"
-    description = message_content
-    color = discord.Color.green()
+    # title = f"Bot Online [{initial_run_sha}]"
+    # description = message_content
+    # color = discord.Color.green()
     #await util.send_developer_message(bot, title, description, color)
-    await daily_report()
-    # print("Ready...")
+    #await daily_report()
+
 
 
 @bot.event
@@ -330,6 +329,7 @@ async def daily_report():
         
     # Reset daily voice minutes
     daily_voice_minutes = {}
+    util.clear_daily_voice_minutes()
 
     for guild in bot.guilds:
         util.clear_voice_activity(guild.id)
@@ -571,11 +571,12 @@ async def on_voice_state_update(member, before, after):
             formatted_duration = util.format_duration(duration)
 
             # Update daily voice minutes
-            if member.guild.id not in daily_voice_minutes:
-                daily_voice_minutes[member.guild.id] = 0
-            daily_voice_minutes[member.guild.id] += duration // 60
-
-            print(f'User {member.display_name} left voice channel. Current usage for the day is : \t {daily_voice_minutes[member.guild.id]}')
+            if before.channel.name != 'Away from Keyboard':
+                if member.guild.id not in daily_voice_minutes:
+                    daily_voice_minutes[member.guild.id] = 0
+                daily_voice_minutes[member.guild.id] = daily_voice_minutes.get(member.guild.id, 0) + (duration // 60)
+                util.save_daily_voice_minutes(member.guild.id, daily_voice_minutes[member.guild.id])
+                print(f'User {member.display_name} left voice channel. Current usage for the day is : \t {daily_voice_minutes[member.guild.id]}')
 
             title = 'Disconnected from a voice channel'
             description = f'> {member.mention} left from `{before.channel.category}.{before.channel.name}`'
@@ -592,10 +593,14 @@ async def on_voice_state_update(member, before, after):
                 (now - user_join_times.pop(user_id, now)).total_seconds())
             formatted_duration = util.format_duration(duration)
 
+
             # Update daily voice minutes
-            if member.guild.id not in daily_voice_minutes:
-                daily_voice_minutes[member.guild.id] = 0
-            daily_voice_minutes[member.guild.id] += duration // 60
+            if before.channel.name != 'Away from Keyboard':
+                if member.guild.id not in daily_voice_minutes:
+                    daily_voice_minutes[member.guild.id] = 0
+                daily_voice_minutes[member.guild.id] = daily_voice_minutes.get(member.guild.id, 0) + (duration // 60)
+                util.save_daily_voice_minutes(member.guild.id, daily_voice_minutes[member.guild.id])
+                print(f'User {member.display_name} left voice channel. Current usage for the day is : \t {daily_voice_minutes[member.guild.id]}')
 
             user_join_times[user_id] = now
             title = f'{member.display_name}#{member.discriminator} switched voice channels'

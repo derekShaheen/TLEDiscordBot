@@ -180,6 +180,30 @@ async def send_embed(recipient, title, description, color, url=None, fields=None
     else:
         await recipient.send(embed=embed)
 
+def save_daily_voice_minutes(guild_id, minutes):
+    guild_dir = f'guilds/{guild_id}'
+    voice_minutes_file = f'{guild_dir}/voice_minutes.yml'
+
+    os.makedirs(guild_dir, exist_ok=True)
+
+    with open(voice_minutes_file, 'w') as file:
+        yaml.safe_dump({'voice_minutes': minutes}, file)
+
+def load_daily_voice_minutes():
+    daily_voice_minutes = {}
+    for guild_id in os.listdir('guilds'):
+        voice_minutes_file = f'guilds/{guild_id}/voice_minutes.yml'
+        if os.path.exists(voice_minutes_file):
+            with open(voice_minutes_file, 'r') as file:
+                daily_voice_minutes[int(guild_id)] = yaml.safe_load(file).get('voice_minutes', 0)
+    return daily_voice_minutes
+
+def clear_daily_voice_minutes():
+    for guild_id in os.listdir('guilds'):
+        voice_minutes_file = f'guilds/{guild_id}/voice_minutes.yml'
+        if os.path.exists(voice_minutes_file):
+            with open(voice_minutes_file, 'w') as file:
+                yaml.safe_dump({'voice_minutes': 0}, file)
 
 def manage_voice_activity(guild_id: int, user_id: int = 0, add_user: bool = False):
     guild_dir = f'guilds/{guild_id}'
@@ -306,7 +330,7 @@ def generate_plot(guilds: list):
         x = np.arange(len(data))
         coeffs = np.polyfit(x, data['unique_users'], 1)
         trendline = coeffs[0] * x + coeffs[1]
-        trendline_plot, = ax1.plot(data['date'], trendline, label=f'Trend ({coeffs[0]:.2f}x + {coeffs[1]:.2f})', color='tab:green', linestyle='--')
+        trendline_plot, = ax1.plot(data['date'], trendline, label=f'Trend ({coeffs[0]:.2f}x + {coeffs[1]:.2f})', color='tab:blue', linestyle='--')
 
         # Fill the area between the trendline and the unique_users plot
         ax1.fill_between(data['date'], data['unique_users'], trendline, where=(data['unique_users'] > trendline), interpolate=True, alpha=0.5, color='tab:blue', edgecolor='none')
