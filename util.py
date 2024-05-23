@@ -279,6 +279,10 @@ def save_daily_report(guild_id: int, current_time: datetime, unique_users: int, 
     with open(daily_report_file, 'a') as file:
         file.write(report_data)
 
+import matplotlib.dates as mdates
+import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
+
 def generate_plot(guilds: list):
     print(f'Generating plot...')
     plot_image_file = f'daily_report_plot.png'
@@ -306,7 +310,7 @@ def generate_plot(guilds: list):
         max_value_date = data['date'][data['unique_users'].idxmax()].strftime('%Y-%m-%d')
 
         # Use only the bottom x rows of the data
-        data = data.tail(90)
+        data = data.tail(30)
 
         mean_value = data['unique_users'].mean()
         median_value = data['unique_users'].median()
@@ -317,7 +321,7 @@ def generate_plot(guilds: list):
         color = 'tab:blue'
         ax1.set_xlabel('Date')
         ax1.set_ylabel('Unique Users', color=color)
-        ax1.plot(data['date'], data['unique_users'], label=f'{guild_name} - Unique Users', color=color)
+        ax1.bar(data['date'], data['unique_users'], color=color, alpha=0.6, label=f'{guild_name} - Unique Users')
         ax1.tick_params(axis='y', labelcolor=color)
 
         ax2 = ax1.twinx()  # Instantiate a second axes that shares the same x-axis
@@ -333,7 +337,7 @@ def generate_plot(guilds: list):
         trendline_plot, = ax1.plot(data['date'], trendline, label=f'Trend ({coeffs[0]:.2f}x + {coeffs[1]:.2f})', color='tab:blue', linestyle='--')
 
         # Fill the area between the trendline and the unique_users plot
-        ax1.fill_between(data['date'], data['unique_users'], trendline, where=(data['unique_users'] > trendline), interpolate=True, alpha=0.5, color='tab:blue', edgecolor='none')
+        ax1.fill_between(data['date'], data['unique_users'], trendline, where=(data['unique_users'] > trendline), interpolate=True, alpha=0.3, color='tab:blue', edgecolor='none')
 
         # Label the final data point for unique users
         final_date = data['date'].iloc[-1]
@@ -351,13 +355,12 @@ def generate_plot(guilds: list):
 
         # Format the x-axis to show dates properly
         ax1.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-        ax1.xaxis.set_major_locator(mdates.DayLocator(interval=15))
+        ax1.xaxis.set_major_locator(mdates.DayLocator(interval=5))
         plt.setp(ax1.xaxis.get_majorticklabels(), rotation=45)
 
         ax1.yaxis.set_major_locator(MaxNLocator(integer=True))
 
         # Add a legend
-        #fig.legend()
         fig.legend(handles=[trendline_plot], loc='upper left')
         fig.tight_layout()  # Otherwise the right y-label is slightly clipped
         fig.subplots_adjust(top=0.93)  # Adjust the top padding to ensure the title is not cut off
@@ -368,6 +371,7 @@ def generate_plot(guilds: list):
     plt.savefig(plot_image_file)
 
     return plot_image_file
+
 
 
 def get_current_time(show_time=True, no_format=False):
