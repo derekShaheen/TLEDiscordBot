@@ -341,7 +341,7 @@ def generate_plot(guilds: list):
         ax1.text(final_date, final_value, f'{final_value}', color='tab:blue')
 
         # Label the final data point for total voice hours
-        final_voice_hours_value = data['total_voice_hours'].round(2).iloc[-1]
+        final_voice_hours_value = data['total_voice_hours'].round(1).iloc[-1]
         ax2.text(final_date, final_voice_hours_value, f'{final_voice_hours_value}', color='tab:red')
 
         # Display statistical information along the bottom of the graph
