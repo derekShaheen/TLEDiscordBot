@@ -279,10 +279,6 @@ def save_daily_report(guild_id: int, current_time: datetime, unique_users: int, 
     with open(daily_report_file, 'a') as file:
         file.write(report_data)
 
-import matplotlib.dates as mdates
-import matplotlib.pyplot as plt
-from matplotlib.ticker import MaxNLocator
-
 def generate_plot(guilds: list):
     print(f'Generating plot...')
     plot_image_file = f'daily_report_plot.png'
@@ -342,7 +338,11 @@ def generate_plot(guilds: list):
         # Label the final data point for unique users
         final_date = data['date'].iloc[-1]
         final_value = data['unique_users'].iloc[-1]
-        ax1.text(final_date, final_value, f'{final_value}')
+        ax1.text(final_date, final_value, f'{final_value}', color='tab:blue')
+
+        # Label the final data point for total voice hours
+        final_voice_hours_value = data['total_voice_hours'].round(2).iloc[-1]
+        ax2.text(final_date, final_voice_hours_value, f'{final_voice_hours_value}', color='tab:red')
 
         # Display statistical information along the bottom of the graph
         stats_text = (
