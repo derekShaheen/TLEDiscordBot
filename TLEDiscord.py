@@ -61,7 +61,7 @@ bot.add_command(cmds.move)
 bot.add_command(cmds.set_log_channel)
 bot.add_command(cmds.toggle_logging)
 bot.add_command(cmds.allowed_roles)
-bot_start_time = datetime.now() + timedelta(seconds=2)
+bot_start_time = util.get_current_time(False, True)
 
 # Initialize the bot
 
