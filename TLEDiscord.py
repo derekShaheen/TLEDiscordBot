@@ -568,6 +568,11 @@ async def on_voice_state_update(member, before, after):
         elif after.channel is None:
             duration = round(
                 (now - user_join_times.pop(user_id, now)).total_seconds())
+                
+            # Check if duration is 0
+            if duration == 0:
+                duration = round((now - bot_start_time).total_seconds())
+
             formatted_duration = util.format_duration(duration)
 
             # Update daily voice minutes
@@ -597,7 +602,7 @@ async def on_voice_state_update(member, before, after):
                 duration = round((now - bot_start_time).total_seconds())
 
             formatted_duration = util.format_duration(duration)
-            
+
             # Update daily voice minutes
             if before.channel.name != 'Away from Keyboard':
                 if member.guild.id not in daily_voice_minutes:
