@@ -100,7 +100,7 @@ async def on_ready():
     check_and_move_users.start()
     check_version.start()
     restart_bot_loop.start()
-    #heartbeat_loop.start()
+    heartbeat_loop.start()
     
     # message_content = f'{bot.user} is now online and connected to the following servers:\n'
     # for guild in bot.guilds:
