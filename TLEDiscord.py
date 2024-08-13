@@ -156,10 +156,62 @@ async def exit(ctx):
 # Loop section
 
 
-# @tasks.loop(seconds=1)
-# async def heartbeat_loop():
-#     # heartbeat_proc()
-#     await live_heartbeat()
+@tasks.loop(seconds=1)
+async def heartbeat_loop():
+    # heartbeat_proc()
+    await live_heartbeat()
+
+def generate_table() -> Table:
+    table = Table()
+    table.add_column("Uptime", justify="center")
+    # table.add_column(f"Heartbeat", justify="center")
+    table.add_column("Ping", justify="center")
+    table.add_column("Guild", justify="center")
+    table.add_column("Total Users", justify="center")
+    table.add_column("In Voice", justify="center")
+    table.add_column("Unique Today", justify="center")
+    uptime = datetime.now() - bot_start_time
+    uptime_str = str(uptime).split('.')[0]  # Remove microseconds
+    latency_ms = bot.latency * 1000  # Convert to milliseconds
+    # current_time = util.get_current_time()
+
+    for guild in bot.guilds:
+        total_users = len(guild.members)
+        users_in_voice_chat = sum(
+            1 for member in guild.members if member.voice)
+        unique_users_in_voice_chat = util.manage_voice_activity(
+            guild.id, None, add_user=False)
+
+        # Truncate the guild name to 17 characters
+        truncated_guild_name = guild.name[:20]
+
+        # Set latency color based on the value
+        latency_color = "green" if latency_ms < 100 else (
+            "yellow" if latency_ms <= 200 else "red")
+        if (latency_ms >= 1000):
+            latency_text = f"[{latency_color}]{latency_ms:.0f}ms[/{latency_color}]"
+        elif (latency_ms >= 100):
+            latency_text = f"[{latency_color}]{latency_ms:.1f}ms[/{latency_color}]"
+        else:
+            latency_text = f"[{latency_color}]{latency_ms:.2f}ms[/{latency_color}]"
+
+        table.add_row(
+            uptime_str,
+            # current_time,
+            latency_text,
+            f"{truncated_guild_name}",
+            str(total_users),
+            str(users_in_voice_chat),
+            str(len(unique_users_in_voice_chat))
+        )
+
+    return table
+
+async def live_heartbeat():
+    with Live(generate_table()) as live:
+        while True:
+            live.update(generate_table())
+            await asyncio.sleep(1)  # Adjust the update frequency as needed
 
 @bot.command()
 async def heartbeat(ctx):
@@ -194,6 +246,7 @@ def generate_table() -> Table:
     table.add_column("Total Users", justify="center")
     table.add_column("In Voice", justify="center")
     table.add_column("Unique Today", justify="center")
+    table.add_column("Usage Today", justify="center")
     uptime = datetime.now() - bot_start_time
     uptime_str = str(uptime).split('.')[0]  # Remove microseconds
     latency_ms = bot.latency * 1000  # Convert to milliseconds
@@ -226,7 +279,8 @@ def generate_table() -> Table:
                 f"{truncated_guild_name}",
                 str(total_users),
                 str(users_in_voice_chat),
-                str(len(unique_users_in_voice_chat))
+                str(len(unique_users_in_voice_chat)),
+                str(daily_voice_minutes[guild.id])
             )
         else:
             table.add_row(
@@ -236,7 +290,8 @@ def generate_table() -> Table:
                 f"{truncated_guild_name}",
                 str(total_users),
                 str(users_in_voice_chat),
-                "0"
+                "0",
+                str(daily_voice_minutes[guild.id])
             )
 
     return table
