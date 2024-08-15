@@ -100,7 +100,7 @@ async def on_ready():
     check_and_move_users.start()
     check_version.start()
     restart_bot_loop.start()
-    heartbeat_loop.start()
+    #heartbeat_loop.start()
     
     # message_content = f'{bot.user} is now online and connected to the following servers:\n'
     # for guild in bot.guilds:
@@ -156,10 +156,10 @@ async def exit(ctx):
 # Loop section
 
 
-@tasks.loop(seconds=30)
-async def heartbeat_loop():
-    # heartbeat_proc()
-    await live_heartbeat()
+# @tasks.loop(seconds=30)
+# async def heartbeat_loop():
+#     # heartbeat_proc()
+#     await live_heartbeat()
 
 def generate_table() -> Table:
     table = Table()
@@ -660,6 +660,7 @@ async def run_bot():
             print(f"An unexpected error occurred: {exc}")
             await bot.close()
             break
+            
 
 if __name__ == "__main__":
     asyncio.run(run_bot())
