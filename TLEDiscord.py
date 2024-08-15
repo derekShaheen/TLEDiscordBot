@@ -61,7 +61,7 @@ bot.add_command(cmds.move)
 bot.add_command(cmds.set_log_channel)
 bot.add_command(cmds.toggle_logging)
 bot.add_command(cmds.allowed_roles)
-bot_start_time = util.get_current_time(False, True)
+bot_start_time = datetime.now()
 
 # Initialize the bot
 
@@ -204,7 +204,7 @@ def generate_table() -> Table:
                 str(total_users),
                 str(users_in_voice_chat),
                 str(len(unique_users_in_voice_chat)),
-                str(daily_voice_minutes[guild.id])
+                f"{str(daily_voice_minutes.get(guild.id, 0))} minutes"
             )
         else:
             table.add_row(
@@ -215,7 +215,7 @@ def generate_table() -> Table:
                 str(total_users),
                 str(users_in_voice_chat),
                 "0",
-                str(daily_voice_minutes[guild.id])
+                f"{str(daily_voice_minutes.get(guild.id, 0))} minutes"
             )
 
     return table
@@ -224,7 +224,7 @@ async def live_heartbeat():
     with Live(generate_table()) as live:
         while True:
             live.update(generate_table())
-            await asyncio.sleep(30)  # Adjust the update frequency as needed
+            await asyncio.sleep(3)  # Adjust the update frequency as needed
 
 @bot.command()
 async def heartbeat(ctx):
