@@ -62,6 +62,7 @@ bot.add_command(cmds.set_log_channel)
 bot.add_command(cmds.toggle_logging)
 bot.add_command(cmds.allowed_roles)
 bot_start_time = datetime.now()
+bot_start_time_formatted = util.get_current_time(False, True)
 
 # Initialize the bot
 
@@ -579,7 +580,7 @@ async def on_voice_state_update(member, before, after):
                 
             # Check if duration is 0
             if duration == 0:
-                duration = round((now - bot_start_time).total_seconds())
+                duration = round((now - bot_start_time_formatted).total_seconds())
 
             formatted_duration = util.format_duration(duration)
 
@@ -607,7 +608,7 @@ async def on_voice_state_update(member, before, after):
 
             # Check if duration is 0
             if duration == 0:
-                duration = round((now - bot_start_time).total_seconds())
+                duration = round((now - bot_start_time_formatted).total_seconds())
 
             formatted_duration = util.format_duration(duration)
 
