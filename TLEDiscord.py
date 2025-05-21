@@ -561,7 +561,7 @@ async def on_voice_state_update(member, before, after):
                 title = f'{member.display_name}#{member.discriminator} connected to a voice channel'
             else
                 title = f'{member.display_name} connected to a voice channel'
-            end
+
             last_seen = util.load_last_seen(member.guild.id, member.id)
             if last_seen != 'Never':
                 time_difference = util.compute_time_difference(last_seen)
@@ -602,7 +602,7 @@ async def on_voice_state_update(member, before, after):
                 title = f'{member.display_name}#{member.discriminator} disconnected from a voice channel'
             else 
                 title = f'{member.display_name} disconnected from a voice channel'
-            end
+
             description = f'> {member.mention} left from `{before.channel.category}.{before.channel.name}`'
             color = discord.Color.red()
             fields = [
@@ -636,7 +636,7 @@ async def on_voice_state_update(member, before, after):
                 title = f'{member.display_name}#{member.discriminator} switched voice channels'
             else
                 title = f'{member.display_name} switched voice channels'
-            end
+
             description = f'> User {member.mention} ({member.nickname}) moved from \n`{before.channel.category}.{before.channel.name}` ➦ `{after.channel.category}.{after.channel.name}`'
             color = discord.Color.blue()
             fields = [
