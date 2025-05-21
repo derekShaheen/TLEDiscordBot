@@ -638,7 +638,7 @@ async def on_voice_state_update(member, before, after):
             else:
                 title = f'{member.display_name} switched voice channels'
 
-            description = f'> {member.mention} moved from \n`{before.channel.category}.{before.channel.name}` ➦ `{after.channel.category}.{after.channel.name}`'
+            description = f'> {member.mention} switched from \n`{before.channel.category}.{before.channel.name}` ➦ `{after.channel.category}.{after.channel.name}`'
             color = discord.Color.blue()
             fields = [
                 (f'Duration in {before.channel.name}',
