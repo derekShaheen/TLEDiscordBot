@@ -603,6 +603,7 @@ async def on_voice_state_update(member, before, after):
             else:
                 title = f'{member.display_name} disconnected from a voice channel'
 
+            #description = f'> {member.mention} ({member.display_name}) left from `{before.channel.category}.{before.channel.name}`'
             description = f'> {member.mention} left from `{before.channel.category}.{before.channel.name}`'
             color = discord.Color.red()
             fields = [
@@ -637,7 +638,7 @@ async def on_voice_state_update(member, before, after):
             else:
                 title = f'{member.display_name} switched voice channels'
 
-            description = f'> User {member.mention} ({member.display_name}) moved from \n`{before.channel.category}.{before.channel.name}` ➦ `{after.channel.category}.{after.channel.name}`'
+            description = f'> {member.mention} moved from \n`{before.channel.category}.{before.channel.name}` ➦ `{after.channel.category}.{after.channel.name}`'
             color = discord.Color.blue()
             fields = [
                 (f'Duration in {before.channel.name}',
