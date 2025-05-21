@@ -557,7 +557,7 @@ async def on_voice_state_update(member, before, after):
         if before.channel is None:
             user_join_times[user_id] = now
             title = ""
-            if member.discriminator != "0":
+            if member.discriminator and member.discriminator != "0":
                 title = f'{member.display_name}#{member.discriminator} connected to a voice channel'
             else:
                 title = f'{member.display_name} connected to a voice channel'
@@ -598,7 +598,7 @@ async def on_voice_state_update(member, before, after):
                 print(f'User {member.display_name} left voice channel. Current usage for the day is : \t {daily_voice_minutes[member.guild.id]}')
 
             title = ""
-            if member.discriminator != "0":
+            if member.discriminator and member.discriminator != "0":
                 title = f'{member.display_name}#{member.discriminator} disconnected from a voice channel'
             else:
                 title = f'{member.display_name} disconnected from a voice channel'
@@ -628,11 +628,11 @@ async def on_voice_state_update(member, before, after):
                     daily_voice_minutes[member.guild.id] = 0
                 daily_voice_minutes[member.guild.id] = daily_voice_minutes.get(member.guild.id, 0) + (duration // 60)
                 util.save_daily_voice_minutes(member.guild.id, daily_voice_minutes[member.guild.id])
-                print(f'User {member.display_name} left voice channel. Current usage for the day is : \t {daily_voice_minutes[member.guild.id]}')
+                print(f'User {member.display_name} switched voice channel. Current usage for the day is : \t {daily_voice_minutes[member.guild.id]}')
 
             user_join_times[user_id] = now
             title = ""
-            if member.discriminator != "0":
+            if member.discriminator and member.discriminator != "0":
                 title = f'{member.display_name}#{member.discriminator} switched voice channels'
             else:
                 title = f'{member.display_name} switched voice channels'
