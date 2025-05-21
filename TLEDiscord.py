@@ -559,7 +559,7 @@ async def on_voice_state_update(member, before, after):
             title = ""
             if member.discriminator != 0:
                 title = f'{member.display_name}#{member.discriminator} connected to a voice channel'
-            else
+            else:
                 title = f'{member.display_name} connected to a voice channel'
 
             last_seen = util.load_last_seen(member.guild.id, member.id)
@@ -600,7 +600,7 @@ async def on_voice_state_update(member, before, after):
             title = ""
             if member.discriminator != 0:
                 title = f'{member.display_name}#{member.discriminator} disconnected from a voice channel'
-            else 
+            else:
                 title = f'{member.display_name} disconnected from a voice channel'
 
             description = f'> {member.mention} left from `{before.channel.category}.{before.channel.name}`'
@@ -634,7 +634,7 @@ async def on_voice_state_update(member, before, after):
             title = ""
             if member.discriminator != 0:
                 title = f'{member.display_name}#{member.discriminator} switched voice channels'
-            else
+            else:
                 title = f'{member.display_name} switched voice channels'
 
             description = f'> User {member.mention} ({member.nickname}) moved from \n`{before.channel.category}.{before.channel.name}` ➦ `{after.channel.category}.{after.channel.name}`'
