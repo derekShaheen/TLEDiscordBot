@@ -263,6 +263,10 @@ async def check_and_move_users():
         member_general_channel = discord.utils.get(
             guild.voice_channels, name="Member General")
 
+        if member_general_channel is None:
+            member_general_channel = discord.utils.get(
+                guild.voice_channels, name="General")
+
         if source_channel and member_general_channel:
             moved_users_count = 0
             for member in source_channel.members:
