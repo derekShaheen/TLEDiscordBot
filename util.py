@@ -117,7 +117,8 @@ def load_config(guild_id):
 
     if os.path.exists(config_path):
         with open(config_path, 'r') as file:
-            return yaml.safe_load(file)
+            config = yaml.safe_load(file) or {}
+            return {**default_config, **config}
     else:
         # Create the config directory if it doesn't exist
         os.makedirs(os.path.dirname(config_path), exist_ok=True)
@@ -132,6 +133,8 @@ def load_config(guild_id):
 def save_config(guild_id, config):
     config_path = f'guilds/{guild_id}/config.yml'
 
+    os.makedirs(os.path.dirname(config_path), exist_ok=True)
+
     with open(config_path, 'w') as file:
         yaml.safe_dump(config, file)
 
@@ -141,7 +144,7 @@ def store_last_seen(guild_id, user_id):
 
     if os.path.exists(seen_path):
         with open(seen_path, 'r') as file:
-            seen_data = yaml.safe_load(file)
+            seen_data = yaml.safe_load(file) or {}
     else:
         # Create the directory if it doesn't exist
         os.makedirs(os.path.dirname(seen_path), exist_ok=True)
@@ -157,7 +160,7 @@ def load_last_seen(guild_id, user_id):
     
     if os.path.exists(seen_path):
         with open(seen_path, 'r') as file:
-            seen_data = yaml.safe_load(file)
+            seen_data = yaml.safe_load(file) or {}
             if user_id in seen_data:
                 return seen_data[user_id]
     
@@ -191,14 +194,24 @@ def save_daily_voice_minutes(guild_id, minutes):
 
 def load_daily_voice_minutes():
     daily_voice_minutes = {}
+    if not os.path.isdir('guilds'):
+        return daily_voice_minutes
+
     for guild_id in os.listdir('guilds'):
+        if not guild_id.isdigit():
+            continue
+
         voice_minutes_file = f'guilds/{guild_id}/voice_minutes.yml'
         if os.path.exists(voice_minutes_file):
             with open(voice_minutes_file, 'r') as file:
-                daily_voice_minutes[int(guild_id)] = yaml.safe_load(file).get('voice_minutes', 0)
+                voice_minutes_data = yaml.safe_load(file) or {}
+                daily_voice_minutes[int(guild_id)] = voice_minutes_data.get('voice_minutes', 0)
     return daily_voice_minutes
 
 def clear_daily_voice_minutes():
+    if not os.path.isdir('guilds'):
+        return
+
     for guild_id in os.listdir('guilds'):
         voice_minutes_file = f'guilds/{guild_id}/voice_minutes.yml'
         if os.path.exists(voice_minutes_file):
@@ -429,15 +442,14 @@ def get_latest_commit_sha():
     headers = {
         "Authorization": f"token {GITHUB_TOKEN}",
     }
-    response = requests.get(url, headers=headers)
-
-    if response.status_code == 200:
+    try:
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()
         commits = response.json()
         latest_commit = commits[0]
         full_sha = latest_commit["sha"]
-        short_sha = full_sha[:7]
-
-        return short_sha
-    else:
-        print(f"Error checking version: {response.status_code}")
-        return None
+        return full_sha[:7]
+    except (requests.RequestException, IndexError, KeyError, ValueError) as exc:
+        error_message = f"Error checking version: {exc}"
+        print(error_message)
+        return error_message

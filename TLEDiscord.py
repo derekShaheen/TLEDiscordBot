@@ -70,7 +70,7 @@ bot_start_time_formatted = util.get_current_time(False, True)
 @bot.event
 async def on_ready():
     global initial_run_sha, daily_voice_minutes
-    initial_run_sha = util.get_latest_commit_sha()
+    initial_run_sha = await asyncio.to_thread(util.get_latest_commit_sha)
     daily_voice_minutes = util.load_daily_voice_minutes()
 
     print("----------------------")
@@ -97,10 +97,9 @@ async def on_ready():
 
     print("\nInitializing and scheduling tasks...")
 
-    daily_report.start()
-    check_and_move_users.start()
-    check_version.start()
-    restart_bot_loop.start()
+    for task_loop in (daily_report, check_and_move_users, check_version, restart_bot_loop):
+        if not task_loop.is_running():
+            task_loop.start()
     #heartbeat_loop.start()
     
     # message_content = f'{bot.user} is now online and connected to the following servers:\n'
@@ -352,9 +351,16 @@ async def daily_report():
 @tasks.loop(seconds=30)
 async def check_version():
     global initial_run_sha
-    check_sha = util.get_latest_commit_sha()
+    check_sha = await asyncio.to_thread(util.get_latest_commit_sha)
 
-    if not check_sha.startswith('Error') and initial_run_sha != check_sha:
+    if not check_sha or check_sha.startswith('Error'):
+        return
+
+    if not initial_run_sha or str(initial_run_sha).startswith('Error'):
+        initial_run_sha = check_sha
+        return
+
+    if initial_run_sha != check_sha:
         title = "New bot version has been detected."
         description = f'Initiating the update and restart process...\n[{initial_run_sha}] -> [{check_sha}]'
         color = discord.Color.blurple()
@@ -476,13 +482,15 @@ async def on_command_error(ctx, error):
 
 @bot.event
 async def on_member_remove(member):
-    await log_event(member.guild, config['log_channel_name'], f'{member.display_name} left the server', '', discord.Color.red(), timestamp=datetime.datetime.now())
+    guild_config = util.load_config(member.guild.id)
+    await log_event(member.guild, guild_config['log_channel_name'], f'{member.display_name} left the server', '', discord.Color.red(), timestamp=datetime.now())
 
 
 @bot.event
 async def on_member_update(before, after):
     if before.nick != after.nick:
-        await log_event(after.guild, config['log_channel_name'], f'{after.display_name} changed their nickname', f'Before: {before.nick}\nAfter: {after.nick}', discord.Color.blue())
+        guild_config = util.load_config(after.guild.id)
+        await log_event(after.guild, guild_config['log_channel_name'], f'{after.display_name} changed their nickname', f'Before: {before.nick}\nAfter: {after.nick}', discord.Color.blue())
 
 @bot.event
 async def on_voice_state_update(member, before, after):
@@ -510,22 +518,23 @@ async def on_voice_state_update(member, before, after):
                     game_rooms = sorted([channel for channel in member.guild.voice_channels if util.is_game_room_channel(channel, category_name)],
                                         key=lambda x: int(x.name.split()[-1]))
 
-                    # Determine the next available integer for Game Room
-                    next_game_room_number = None
-                    for i, game_room in enumerate(game_rooms):
-                        game_room_number = i + 1
+                    if game_rooms:
+                        # Determine the next available integer for Game Room
+                        next_game_room_number = None
+                        for i, game_room in enumerate(game_rooms):
+                            game_room_number = i + 1
 
-                        if game_room_number != int(game_room.name.split()[-1]):
-                            next_game_room_number = game_room_number
-                            break
+                            if game_room_number != int(game_room.name.split()[-1]):
+                                next_game_room_number = game_room_number
+                                break
 
-                    # Assign the next available integer if not found
-                    if next_game_room_number is None:
-                        next_game_room_number = int(game_rooms[-1].name.split()[-1]) + 1
+                        # Assign the next available integer if not found
+                        if next_game_room_number is None:
+                            next_game_room_number = int(game_rooms[-1].name.split()[-1]) + 1
 
-                    # Create the next Game Room if needed
-                    if len(game_rooms[-1].members) > 0 and len(game_rooms[0].members) > 0 and len(game_rooms) < max_auto_channels:
-                        await util.create_game_room(member.guild, game_room_category, f"{next_game_room_number}")
+                        # Create the next Game Room if needed
+                        if len(game_rooms[-1].members) > 0 and len(game_rooms[0].members) > 0 and len(game_rooms) < max_auto_channels:
+                            await util.create_game_room(member.guild, game_room_category, f"{next_game_room_number}")
 
     # ====================================================================================================
 
@@ -536,52 +545,51 @@ async def on_voice_state_update(member, before, after):
     # Track channel join/leave
     if before.channel != after.channel:
         config = util.load_config(member.guild.id)
-        
-        # Check if logging is enabled
-        if not config.get('logging_enabled', True):
-            return
-
-        log_channel_name = config['log_channel_name']
-        log_channel = discord.utils.get(
-            member.guild.text_channels, name=log_channel_name)
-
-        # Create the log channel if it doesn't exist
-        if not log_channel:
-            overwrites = {
-                member.guild.default_role: discord.PermissionOverwrite(
-                    read_messages=False)
-            }
-            log_channel = await member.guild.create_text_channel(log_channel_name, overwrites=overwrites)
-
+        logging_enabled = config.get('logging_enabled', True)
+        log_channel = None
         user_id = member.id
         avatar_url = str(member.avatar.url) if member.avatar else str(member.default_avatar.url)
         now = util.get_current_time(False, True)
 
+        if logging_enabled:
+            log_channel_name = config['log_channel_name']
+            log_channel = discord.utils.get(
+                member.guild.text_channels, name=log_channel_name)
+
+            # Create the log channel if it doesn't exist
+            if not log_channel:
+                overwrites = {
+                    member.guild.default_role: discord.PermissionOverwrite(
+                        read_messages=False)
+                }
+                log_channel = await member.guild.create_text_channel(log_channel_name, overwrites=overwrites)
+
         # If the user joined a voice channel
         if before.channel is None:
             user_join_times[user_id] = now
-            title = ""
-            if member.discriminator and member.discriminator != "0":
-                title = f'{member.display_name}#{member.discriminator} connected to a voice channel'
-            else:
-                title = f'{member.display_name} connected to a voice channel'
+            if logging_enabled:
+                title = ""
+                if member.discriminator and member.discriminator != "0":
+                    title = f'{member.display_name}#{member.discriminator} connected to a voice channel'
+                else:
+                    title = f'{member.display_name} connected to a voice channel'
 
-            last_seen = util.load_last_seen(member.guild.id, member.id)
-            if last_seen != 'Never':
-                time_difference = util.compute_time_difference(last_seen)
-            description = f'> {member.mention} joined `{after.channel.category}.{after.channel.name}`'
-            color = discord.Color.green()
-            if last_seen != 'Never':
-                fields = [
-                    (f'Last Seen on Server', f'{time_difference} on {last_seen}'),
-                    (f'Users in {after.channel.name}', util.user_list(after.channel))
-                ]
-            else:
-                fields = [
-                    (f'Last Seen on Server', f'{last_seen}'),
-                    (f'Users in {after.channel.name}', util.user_list(after.channel))
-                ]
-            await util.send_embed(log_channel, title, description, color, None, fields, None, thumbnail_url=avatar_url)
+                last_seen = util.load_last_seen(member.guild.id, member.id)
+                if last_seen != 'Never':
+                    time_difference = util.compute_time_difference(last_seen)
+                description = f'> {member.mention} joined `{after.channel.category}.{after.channel.name}`'
+                color = discord.Color.green()
+                if last_seen != 'Never':
+                    fields = [
+                        (f'Last Seen on Server', f'{time_difference} on {last_seen}'),
+                        (f'Users in {after.channel.name}', util.user_list(after.channel))
+                    ]
+                else:
+                    fields = [
+                        (f'Last Seen on Server', f'{last_seen}'),
+                        (f'Users in {after.channel.name}', util.user_list(after.channel))
+                    ]
+                await util.send_embed(log_channel, title, description, color, None, fields, None, thumbnail_url=avatar_url)
         # If the user left a voice channel
         elif after.channel is None:
             duration = round(
@@ -601,21 +609,22 @@ async def on_voice_state_update(member, before, after):
                 util.save_daily_voice_minutes(member.guild.id, daily_voice_minutes[member.guild.id])
                 print(f'User {member.display_name} left voice channel. Current usage for the day is : \t {daily_voice_minutes[member.guild.id]}')
 
-            title = ""
-            if member.discriminator and member.discriminator != "0":
-                title = f'{member.display_name}#{member.discriminator} disconnected from a voice channel'
-            else:
-                title = f'{member.display_name} disconnected from a voice channel'
+            if logging_enabled:
+                title = ""
+                if member.discriminator and member.discriminator != "0":
+                    title = f'{member.display_name}#{member.discriminator} disconnected from a voice channel'
+                else:
+                    title = f'{member.display_name} disconnected from a voice channel'
 
-            #description = f'> {member.mention} ({member.display_name}) left from `{before.channel.category}.{before.channel.name}`'
-            description = f'> {member.mention} left from `{before.channel.category}.{before.channel.name}`'
-            color = discord.Color.red()
-            fields = [
-                (f'Duration', f'{formatted_duration}'),
-                (f'Users in {before.channel.name}',
-                util.user_list(before.channel))
-            ]
-            await util.send_embed(log_channel, title, description, color, None, fields, None, thumbnail_url=avatar_url)
+                #description = f'> {member.mention} ({member.display_name}) left from `{before.channel.category}.{before.channel.name}`'
+                description = f'> {member.mention} left from `{before.channel.category}.{before.channel.name}`'
+                color = discord.Color.red()
+                fields = [
+                    (f'Duration', f'{formatted_duration}'),
+                    (f'Users in {before.channel.name}',
+                    util.user_list(before.channel))
+                ]
+                await util.send_embed(log_channel, title, description, color, None, fields, None, thumbnail_url=avatar_url)
         # If the user switched voice channels
         else:
             duration = round(
@@ -636,6 +645,10 @@ async def on_voice_state_update(member, before, after):
                 print(f'User {member.display_name} switched voice channel. Current usage for the day is : \t {daily_voice_minutes[member.guild.id]}')
 
             user_join_times[user_id] = now
+            if not logging_enabled:
+                util.store_last_seen(member.guild.id, member.id)
+                return
+
             title = ""
             if member.discriminator and member.discriminator != "0":
                 title = f'{member.display_name}#{member.discriminator} switched voice channels'
