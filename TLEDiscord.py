@@ -259,28 +259,28 @@ async def check_and_move_users():
             source_channel = discord.utils.get(
                 guild.voice_channels, name="Work")
 
-        member_general_channel = discord.utils.get(
+        dest_channel = discord.utils.get(
             guild.voice_channels, name="Member General")
 
-        if member_general_channel is None:
-            member_general_channel = discord.utils.get(
+        if dest_channel is None:
+            dest_channel = discord.utils.get(
                 guild.voice_channels, name="General")
 
-        if source_channel and member_general_channel:
+        if source_channel and dest_channel:
             moved_users_count = 0
             for member in source_channel.members:
                 try:
-                    await member.move_to(member_general_channel)
+                    await member.move_to(dest_channel)
                     moved_users_count += 1
                 except discord.errors.HTTPException as e:
                     print(f'Error moving {member.display_name}: {str(e)}')
             current_time = util.get_current_time()
 
             if moved_users_count > 0:
-                print(f"[{current_time}] [AutoMove] Moved {util.pluralize(moved_users_count, 'user', 'users')} from {source_channel.name} to {member_general_channel.name}")
+                print(f"[{current_time}] [AutoMove] Moved {util.pluralize(moved_users_count, 'user', 'users')} from {source_channel.name} to {dest_channel.name}")
             else:
                 print(
-                    f"[{current_time}] [AutoMove] No users to move from {source_channel.name} to {member_general_channel.name}")
+                    f"[{current_time}] [AutoMove] No users to move from {source_channel.name} to {dest_channel.name}")
 
 
 @tasks.loop(hours=24)
@@ -496,7 +496,7 @@ async def on_member_update(before, after):
 async def on_voice_state_update(member, before, after):
     global daily_voice_minutes
     # Handle Game Room voice channel creation / deletion
-    categories_to_monitor = ["Member Game Rooms", "Public Game Rooms"]
+    categories_to_monitor = ["Member Game Rooms", "Public Game Rooms", "Game Rooms"]
 
     if before.channel != after.channel:
         for category_name in categories_to_monitor:
